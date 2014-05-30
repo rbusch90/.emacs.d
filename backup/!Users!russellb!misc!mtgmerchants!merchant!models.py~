@@ -1,0 +1,226 @@
+from django.db import models
+from django.contrib.auth.models import User
+from oracle.models import Card
+import datetime
+import random
+
+class Merchant(models.Model):
+    acct = models.ForeignKey(User)
+    url = models.CharField(max_length=20)
+    address = models.CharField(max_length=50,blank=True,null=True)
+    city = models.CharField(max_length=25,blank=True,null=True)
+    state= models.CharField(max_length=20,blank=True,null=True)
+    zipcode= models.CharField(max_length=15,blank=True,null=True)
+    country = models.CharField(max_length=50,default="United States of America",blank=True,null=True)
+    avatar = models.CharField(max_length=30)
+
+    current_cart = models.ForeignKey("Cart",blank=True,null=True,related_name="current_cart")
+
+    def inventory(self):
+        return InventoryCard.objects.filter(merchant=self)
+
+    def get_sales_history(self):
+        return Cart.objects.filter(merchant=self)
+
+    def get_card_stock(self,search_criteria):
+        return InventoryCard.objects.filter(merchant=self,card__name__icontains=search_criteria)
+
+    def add_to_sale(self,card,quantity,condition):
+        if card.merchant == self:
+            if self.current_cart is None:
+                new_cart = Cart(merchant=self)
+                new_cart.save()
+                self.current_cart = new_cart
+                self.save()
+            in_cart = False
+            for c in self.current_cart.get_cards():
+                if c.card == card and c.condition == condition:
+                    in_cart = True
+                    if not self.has_stock(card,quantity,condition,c.count):
+                        return "Can't add %d copies to sale.  Not enough in stock." % (quantity)
+                    c.count += quantity
+                    c.save()
+            if not in_cart:
+                if not self.has_stock(card,quantity,condition):
+                    return "Can't add %d copies to sale.  Not enough in stock." % (quantity)
+                new_card = PurchaseCard(cart=self.current_cart,card=card,count=quantity,condition=condition)
+                new_card.save()
+            return True
+
+    def initialize_inventory(self,testing=False):
+        if len(InventoryCard.objects.filter(merchant=self)) > 0:
+            return "ERROR: Merchant inventory already initialized."
+
+        for card in Card.objects.all():
+            c = InventoryCard(merchant=self,card=card)
+            c.save()
+
+        if testing:
+            rand = lambda: int(random.random() * 6)
+            for card in self.inventory():
+                card.nm_count = rand()
+                card.sp_count = rand()
+                card.mp_count = rand()
+                card.save()
+
+        return True
+
+    def cash_out(self,name,expansion,condition,count):
+        pass
+
+    def reduce_inventory(self,card_name,exp,condition,count):
+        card = self.inventory().get(card__name=card_name,card__expansion=exp)
+        if condition == "NM/M":
+            card.nm_count -= count
+            if card.nm_count < 0:
+                card.nm_count = 0
+        elif condition == "SP":
+            card.sp_count -= count
+            if card.sp_count < 0:
+                card.sp_count = 0
+        elif condition == "MP":
+            card.mp_count -= count
+            if card.mp_count < 0:
+                card.mp_count = 0
+
+        card.save()
+
+    def has_stock(self,card,quantity,condition,already_in_cart=0):
+        stock = 0
+        if condition == "NM/M":
+            stock = card.nm_count
+        elif condition == "SP":
+            stock = card.sp_count
+        elif condition == "MP":
+            stock = card.mp_count
+
+        stock -= already_in_cart
+        return stock >= quantity
+
+    def __str__(self):
+        return self.url
+
+class InventoryCard(models.Model):
+    merchant = models.ForeignKey(Merchant)
+    card = models.ForeignKey(Card)
+    nm_count = models.IntegerField(default=0)
+    sp_count = models.IntegerField(default=0)
+    mp_count = models.IntegerField(default=0)
+
+    def cost(self):
+        return self.card.mid_cost().replace("$","")
+
+    def get_id(self):
+        return self.pk
+
+    def card_id(self):
+        return self.card.pk
+
+    def name(self):
+        return self.card.name
+
+    def image_url(self):
+        return self.card.image_url
+
+    def get_card(self):
+        return self.card
+    
+    def get_name(self):
+        return self.card.name
+
+    def get_set(self):
+        return self.card.expansion
+
+    def get_count(self):
+        return self.count
+
+    def get_price(self):
+        try:
+            return "%.2f" % (float(self.card.get_price()))
+        except Exception:
+            return " ---- --"
+
+    def get_sp_price(self):
+        try:
+            return "%.2f" % (float(self.card.get_price()) * 0.95)
+        except Exception:
+            return " ---- --"
+
+    def get_mp_price(self):
+        try:
+            return "%.2f" % (float(self.card.get_price()) * 0.90)
+        except Exception:
+            return " ---- --"
+
+    def get_all_prints(self):
+        return InventoryCard.objects.filter(card__name=self.get_name())
+
+    def __str__(self):
+        return "%s belongs to %s" % (self.get_name(),self.merchant)
+
+class Cart(models.Model):
+    merchant = models.ForeignKey(Merchant,related_name="merchant")
+    user = models.ForeignKey(User,null=True,blank=True)
+    name = models.CharField(max_length=80,null=True,blank=True)
+    timestamp = models.DateTimeField(default=datetime.datetime.now)
+
+    status = models.IntegerField(default=0)
+
+    def get_subtotal(self):
+        cost = 0.00
+        for card in PurchaseCard.objects.filter(cart=self):
+            cost += (float(card.cost()) * card.count)
+        return "%.2f" % (cost)
+
+    def get_total(self):
+        return "%.2f" % (float(self.get_subtotal()) * 1.0875)
+
+    def get_status(self):
+        if self.status == 0:
+            return "Unfinalized"
+        if self.status == 1:
+            return "Pending Payment"
+        if self.status == 2:
+            return "Complete"
+
+    def get_cards(self):
+        return PurchaseCard.objects.filter(cart=self)
+
+class PurchaseCard(models.Model):
+    cart = models.ForeignKey(Cart)
+    card = models.ForeignKey(InventoryCard)
+    count = models.IntegerField()
+    condition = models.CharField(max_length=10)
+
+    def merchant(self):
+        return self.cart.merchant()
+
+    def cost(self):
+        return self.card.cost()
+
+    def total_cost(self):
+        return float(self.cost()) * self.count
+
+    def card_id(self):
+        return self.card.pk
+
+    def name(self):
+        return self.card.name()
+
+    def image_url(self):
+        return self.card.card.image_url
+
+    def get_card(self):
+        return self.card.card
+    
+    def get_name(self):
+        return self.card.name()
+
+    def get_set(self):
+        return self.card.expansion
+
+    def get_count(self):
+        return self.count
+
+    def __str__(self):
+        return "%s sold by %s" % (self.get_name(),self.merchant())

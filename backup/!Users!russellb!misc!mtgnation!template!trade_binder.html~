@@ -1,0 +1,30 @@
+<div class="row">
+  <div class="small-2 columns">
+    <img src="{{ STATIC_URL }}/{{ m_user.get_avatar.path }}"
+	 style="margin-top:5px;"
+	 alt="avatar" />
+  </div>
+  <div class="small-10 columns">
+    <ul class="breadcrumbs" style="margin-top:20px;">
+      <li><a href="/{% if not c_user == m_user %}profile/{{ m_user }}{% endif %}">
+	  {% if c_user == m_user %}your {% else %}{{ m_user }}'s{% endif %} profile</a></li>
+      <li class="current">
+	<a href="/profile/{{ m_user }}/trade_history/">trade binder</a></li>
+    </ul>
+  </div>
+</div>
+<br />
+
+{% if c_user == m_user %}
+
+
+
+{% endif %}
+
+{% with mode="hw_list" %}
+<div class="panel">
+
+  {% include "market/have_want_list.html" %}
+
+</div>
+{% endwith %}

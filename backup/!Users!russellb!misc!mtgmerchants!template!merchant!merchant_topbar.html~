@@ -1,0 +1,82 @@
+<div class="fixed">
+      <!-- Begin Navigation Bar -->
+      <nav class="top-bar" style="margin-bottom:0px;">
+	<ul class= "title-area">
+	  <!-- Title Area -->
+	  <li class="name">
+            <h1>
+		{% if merchant %}
+		<a href="/merchant/{{ merchant.acct }}">
+		<h4 class="subheader">
+		  Inventory System
+		</h4>
+		</a>
+		{% else %}
+		<a href="/">
+		<img src="{{ STATIC_URL }}/logo-text.png"
+				 style="height:40px;margin-top:0px;"/> 
+		</a>
+		{% endif %}
+		
+	    </a></h1>
+	  </li>
+	</ul>
+	<section class="top-bar-section">
+	  <!-- Left Nav Section -->
+	  <ul class="left">
+            <li class="divider show-for-medium-and-up"></li>
+
+	  {% if merchant %}
+	    <li class="has-form">
+	      <form method="GET" action="/merchant/{{ merchant.acct }}/lookup_singles/">
+		<input type="text" placeholder="search card by name..."
+		       onkeyup="if (event.keyCode == 13)$('#submit').focus().click();"
+		       class="card-input" name="search-name" />
+	      </form>
+	    </li>
+	  {% else %}
+	    <li class="">
+	      <a href="/merchant/" style="font-size:18px;">
+		Merchant Tools
+	      </a>
+	    </li>
+	  {% endif %}
+	  </ul>
+	  <!-- Right Nav Section -->
+	  <ul class="right">
+	
+            <li class="divider show-for-medium-and-up"></li>
+	    {% if merchant %}
+            <li><a href="/merchant/{{ merchant.acct }}/notifications/" id="inbox-tab">
+		Notifications (coming soon)
+	    </a></li>
+	    {% endif %}
+	
+            <li class="divider show-for-medium-and-up"></li>
+	    {% if merchant %}
+            <li class="has-dropdown">
+              <a href="/">
+		<!--
+		    <img src="{{ STATIC_URL }}/{{ merchant.get_avatar.path }}"
+			 style="height:35px;vertical-align:middle;margin:3px;"/>
+		    -->
+		    {{ merchant }}
+	      </a>
+              <ul class="dropdown">
+		<li><a href="/merchant/{{ merchant.acct }}/account/">your account</a></li>
+		<li><a href="/shibboleth/logout/">logout</a></li>
+              </ul>
+            </li>
+	    {% else %}
+	    <li>
+	      <a href="/shibboleth/login/"
+		 onclick="prompt_login();return false;">
+		login
+	      </a>
+	    </li>
+	    {% endif %}
+	  </ul>
+	</section>
+      </nav>
+      <!-- End Navigation Bar -->
+</div>

@@ -1,0 +1,29 @@
+[RE-1431] CreationID file for Jenkins
+ - updated RE's ant-lib script to include a CreationID file
+
+[RE-1399] Jenkins MathematicaSaaS builds
+ - fixed MathematicaSaaS to use the right artifacts from other jobs
+
+[RE-1381] Formatted Version number for Jenkins jobs
+ - wrote groovy script for adding formatted version number to all desired jobs
+ - ran script, manually added a few jobs
+
+[RE-1496] References to obsolete variable CREATION_ID
+ - went through effected build and updated them with our new variable
+
+[RE-1430] Deploy webm-dev8
+ - Ported DEVEL and TEST deploy jobs from joshuamlx to re-monitor
+  -- created process for using intermediary server to deploy apps
+  -- removed some ant calls, especially Build Monitor references, in favor of jenkins functionality
+
+[RE-1513] Multi-row tabs for Jenkins views
+ - install and activate plugin for multi-row tabs in views with a lot of tabs
+
+[RE-1465] Request initial compile of MannedSpaceMissionData
+[RE-1507] Compile TideDataLocalized; set up TideData
+[RE-1510] Request initial compile of EclipseData
+
+[RE-1436] TW Calculate scan deployments
+ - setup automated deployments for webm-dev12
+ - setup manual deployment option for webm-tst10
+

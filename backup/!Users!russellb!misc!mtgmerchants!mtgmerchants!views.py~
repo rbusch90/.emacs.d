@@ -1,0 +1,75 @@
+from django.db.models import Q
+from django.contrib.auth import authenticate
+from django.contrib.auth import logout as logout_user
+from django.contrib.auth import login as login_user
+from django.core.validators import validate_email
+from django.contrib.auth.models import User
+from django.shortcuts import render_to_response
+from django.http import HttpResponseRedirect,HttpResponse
+from django.template import RequestContext
+from merchant.models import Merchant
+from merchant.views import validate_merchant
+import datetime
+import re
+import math
+import string
+import random
+from os import listdir
+
+#############
+### PAGES ###
+#############
+
+def login(request):
+    if validate_merchant(request):
+        return HttpResponseRedirect("/")
+
+    try:
+        message = request.GET['message']
+    except Exception:
+        message = False
+
+    main_page = "login.html"
+    return render_to_response("merchant/merchant_frame.html",
+                              {
+                                  'page' : main_page,
+                                  'message' : message,
+                               },
+                              context_instance=RequestContext(request))
+
+###############
+### ACTIONS ###
+###############
+
+def logout(request):
+    logout_user(request)
+    return HttpResponseRedirect("/")
+
+def shibboleth(request):
+    try:
+        uname = request.POST['username']
+        pword = request.POST['password']
+    except Exception:
+        return HttpResponseRedirect('/shibboleth/login/?message=failed')
+
+    user = authenticate(username=uname, password=pword)
+    if user is not None:
+        if user in [merchant.acct for merchant in Merchant.objects.all()]:
+            login_user(request,user)
+            return HttpResponseRedirect("/merchant/%s/" % (merchant.acct))
+        m_user = MagicUser.objects.get(user=user)
+        if user.is_active and m_user.is_active:
+            login_user(request,user)
+            return HttpResponseRedirect('/')
+        else:
+            return HttpResponseRedirect('/shibboleth/login/?message=inactive')
+    else:
+        return HttpResponseRedirect('/shibboleth/login/?message=no_user')
+
+
+#################
+### REDIRECTS ###
+#################
+
+def login_redirect(request):
+    return HttpResponseRedirect("/shibboleth/login/")

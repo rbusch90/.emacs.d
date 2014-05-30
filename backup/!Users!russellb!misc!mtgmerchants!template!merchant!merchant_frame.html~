@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+
+    <title>{{ merchant }} Inventory System</title>
+
+    <script src="{{ STATIC_URL }}/jquery-ui/jquery-1.9.0.js"></script>
+
+    <!-- For MtG Cardtips -->
+    <script type="text/javascript" src="http://deckbox.org/javascripts/bin/tooltip.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}/card_lib.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}/merchants.js"></script>
+
+    <script type="text/javascript" src="{{ STATIC_URL }}/placeholder.js"></script>
+
+    <!-- Included Foundation CSS Files (Compressed) -->
+    <link rel="stylesheet" href="{{ STATIC_URL }}/foundation/css/foundation.css">
+
+
+    <!-- For Card Name completion -->
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.0/themes/base/jquery-ui.css" />
+    <script src="http://code.jquery.com/ui/1.9.0/jquery-ui.js"></script>
+    
+    <!-- Mtg Nation custom stylesheets and js tools -->
+    <link rel="stylesheet" href="{{ STATIC_URL }}/newstyle.css">
+    
+    <link rel="shortcut icon" href="{{ STATIC_URL }}/m.ico" />
+
+    <link rel="image_src" href="{{ STATIC_URL }}/avatars/t3/Venser_the_Sojourner.jpg" />
+
+  </head>
+  
+  <body>
+    
+    <div id="body-container">
+
+      {% include "merchant/merchant_topbar.html" %}
+
+      {% include "merchant/merchant_banner.html" %}
+
+      {% include page %}
+
+
+    </div> <!-- end body container (necessary to keep footer at bottom on short pages) -->
+
+    <div id="footer">
+      <br />
+      <div>&#169; 2012 MtG Nation.  All rights
+	reserved.</div>
+      <div>Magic the Gathering is trademark and copyright
+	Wizards of the Coast, Inc, a subsidiary of Hasbro, Inc. All rights reserved.</div>  
+      <br /><br />
+
+      <a href="/market_rules/">Market Rules</a> | 
+      <a href="/privacy_policy/">Privacy Policy</a>
+
+    </div>
+    
+    <div id="status-bar" class="hidden">
+    </div>
+
+
+<div id="clinic-rules-modal" class="reveal-modal medium">
+  {% include "deckbuilder/clinic_rules.html" %}
+  <a class="close-reveal-modal">&#215;</a>
+</div>
+
+<div id="update_email_modal" class="reveal-modal medium">
+  <h4 class="subheader">enter your new email</h4>
+  <input type="text" name="new_email" id="new_email_input" />
+  <button onclick="update_email();">update</button>
+  <a class="close-reveal-modal">&#215;</a>
+  <div id="new_email_status" style="margin-top:15px;color:#0a0;"></div>
+</div>
+
+<div id="dropdown-container">
+
+  <div class="small reveal-modal" id="edit-hw-card-modal">
+    <form method="POST" id="edit-hw-card-form"
+	  action="/ajax/edit_card_in_hw_list/">
+      {% csrf_token %}
+      <div id="edit-hw-reveal-div">
+
+      </div>
+    </form>
+    <a class="close-reveal-modal">&#215;</a>
+  </div>
+
+</div>
+
+<div id="modal-container">
+
+{% if not c_user %}
+<div id="login-modal" class="small reveal-modal">
+  {% include "login.html" %}
+  <a class="close-reveal-modal">&#215;</a>
+</div>
+{% endif %}
+
+<div id="inform-modal" class="tiny reveal-modal">
+<div id="inform-container"></div>
+<a class="close-reveal-modal">&#215;</a>
+</div>
+
+{% if myprofile %}
+<div id="edit-profile-modal" class="medium reveal-modal">
+{% include "edit_profile.html" %}
+<a class="close-reveal-modal">&#215;</a>
+</div>
+{% endif %}
+</div>
+
+{% if anchor %}
+<script type="text/javascript">
+  document.getElementById('{{ anchor }}').scrollIntoView();
+</script>
+{% endif %}
+
+<script>
+  document.write('<script src='{{ STATIC_URL }}/foundation/ +
+			  ('__proto__' in {} ? 'js/vendor/zepto' : 'js/vendor/jquery') +
+			  '.js><\/script>')
+  </script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.alerts.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.clearing.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.cookie.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.dropdown.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.forms.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.joyride.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.magellan.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.orbit.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.placeholder.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.reveal.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.section.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.tooltips.js"></script>
+  <script src="{{ STATIC_URL }}/foundation/js/foundation/foundation.topbar.js"></script>
+  <script>
+  $(document).foundation();
+  $('input[placeholder], textarea[placeholder]').placeholder();
+  </script>
+
+  </body>
+</html>
+

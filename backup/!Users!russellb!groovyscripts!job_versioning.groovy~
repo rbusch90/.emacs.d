@@ -1,0 +1,2 @@
+def current_job = null // TODO: derive this object from the current context
+

@@ -1,0 +1,12 @@
+<table>
+  <tr>
+    {% for card in all_cards %}
+    <td>{{ card.name }}</td>
+    <td>
+      {% for single_card in card.get_all_prints %}
+      <div class="row">
+	<div class="small-3 columns">{{ single_card.get_set }}</div>
+	<div class="small-3 columns">NM/M</div>
+	<div class="small-3 columns">SP</div>
+	<div class="small-3 columns">MP</div>
+      </div>

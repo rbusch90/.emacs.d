@@ -1,0 +1,46 @@
+{% include "merchant/merchant_banner.html" %}
+
+<div class="row" id="main-content" style="min-width:1280px;margin-top:20px;margin-bottom:20px;">
+
+
+<div class="small-6 columns">
+
+  <h3 class="subheader">
+    Card List:
+  </h3>
+
+  <form method="GET" action="/merchant/{{ merchant.acct }}/lookup_singles/">
+    <textarea id="customer-list-textarea"
+	      name="customer-list"
+	      placeholder="enter card names separated by new lines..."
+	      style="height:250px;"></textarea>
+    
+    <button class="large button" onclick="parse_customer_list();">Lookup Cards</button>
+  </form>
+
+  <hr />
+
+  <h4 class="subheader">
+    Change settings that will affect how your public page is seen by your customers.
+    Update your company logo, public message, and more.
+  </h4>
+
+  <button class="large secondary button">Edit Public Page</button>
+  <hr />
+
+  <h4 class="subheader">
+    Manage your store's inventory.  Add new cards or remove cards that have left
+    your inventory (other than cards sold through the Mtg Merchant's Tool).
+  </h4>
+
+  <button class="large secondary button">Manage Inventory</button>
+  
+</div>
+
+<div class="small-4 small-offset-2 columns">
+  
+  {% include "merchant/widgets/current_cart.html" %}
+  
+</div>
+
+</div>

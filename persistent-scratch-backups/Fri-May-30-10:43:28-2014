@@ -1,0 +1,94 @@
+;; This is a pimped out scratch buffer that persists across sessions. --russellb
+
+hudson.triggers.Trigger;
+
+hudson.triggers.SCMTrigger;
+
+hudson.triggers.TimerTrigger;
+
+
+==============
+
+if [SCMTrigger in someList]:
+
+    remove SCMTrigger
+    add new TimerTrigger("H 18 * * *")
+
+
+=============
+
+for(trigger in new_job.getTriggers()){
+    if (trigger.getClass() == SCMTrigger){
+        new_job.removeTrigger(trigger.getDescriptor());
+        new_job.addTrigger(new TimeTrigger("H 18 * * *"));
+    }
+}
+
+
+
+=====================================================
+
+AstronomyConvenienceFunctions AuthorTools CacheManager CCompilerDriver ClusterIntegration CompiledFunctionTools Convert CUDALink DatabaseLink DataScience DocumentationSearch EmbedCode EntityFramework FDLLink FEMDocumentation FormulaData GeometryTools GPUTools GUIKit HTTPClient IMAQTools InflationAdjust JLink JSONTools LibraryLink MP3Tools NETLink NotebookTemplating OAuth OGGTools OpenCLLink OpenSURF PacletManager ParallelTools PLI ProcessLink RemoteServices RLink Security SerialLink SocketLink SymbolicC TetGenLink TinkerForgeWeatherStationTools TriangleLink UUID WebpTools WebServices WolframAlphaClient XMLSchema
+
+
+UUID
+
+m10_jobs = ["CUDALink",
+    "TriangleLink",
+    "OAuth",
+    "GeometryTools",
+    "ProcessLink",
+    "QuantityUnits",
+    "WolframAlphaClient",
+    "EntityFramework"]
+
+for(layout_view in Hudson.instance.getView("Mathematica").getView("Release").getView("10.0").getView("Layout").getViews()){
+  
+  for (job in layout_view.getItems()){
+    revert = true;
+    if(job.name.contains("Layout")) revert = false;
+    for(jobname in m10_jobs){
+        if (job.name.contains(jobname)) revert = false;
+    }
+    if (!revert) continue;
+    
+    old_job = Hudson.instance.getItems().find{ it.name == (job.name.replace(".10.0","")) }
+    if (old_job != null){
+      layout_view.doAddJobToView(old_job.name);
+      layout_view.doRemoveJobFromView(old_job.name + ".10.0");
+    }
+  }
+}
+
+
+========================================
+
+m10_jobs = ["CUDALink",
+    "TriangleLink",
+    "OAuth",
+    "GeometryTools",
+    "ProcessLink",
+    "QuantityUnits",
+    "WolframAlphaClient",
+    "EntityFramework"]
+
+for(component_view in Hudson.instance.getView("Mathematica").getView("Release").getView("10.0").getView("Components").getViews()){
+  disable = true;
+  for(jobname in m10_jobs){
+    if (component_view.name == jobname) disable = false;
+  }
+
+  if (!disable) continue;
+
+  for (job in component_view.getItems()){
+    job.disable()
+    job.save()
+    }
+  }
+}
+
+==============================
+
+
+
+cvs -q -d :ext:cvs.wolfram.com:/cvs rtag -r ${REVISION} -a -F ${CVS_TAG} ${FILE} [FROZEN]

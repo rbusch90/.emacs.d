@@ -1,0 +1,30 @@
+import os
+
+THRESHOLD = 0.90
+
+def threshold_exceeded(volume):
+
+def get_disk_usage(path):
+    if hasattr(os, 'statvfs'):  # POSIX
+        st = os.statvfs(path)
+        total = st.f_blocks * st.f_frsize
+        used = (st.f_blocks - st.f_bfree) * st.f_frsize
+        return used / total
+
+    elif os.name == 'nt':       # Windows
+        import ctypes
+        import sys
+        _, total, free = ctypes.c_ulonglong(), ctypes.c_ulonglong(), \
+                           ctypes.c_ulonglong()
+        if sys.version_info >= (3,) or isinstance(path, unicode):
+            fun = ctypes.windll.kernel32.GetDiskFreeSpaceExW
+        else:
+            fun = ctypes.windll.kernel32.GetDiskFreeSpaceExA
+        ret = fun(path, ctypes.byref(_), ctypes.byref(total), ctypes.byref(free))
+        if ret == 0:
+            raise ctypes.WinError()
+        used = total.value - free.value
+        return used / total.value
+
+    else:
+        raise NotImplementedError("platform not supported")

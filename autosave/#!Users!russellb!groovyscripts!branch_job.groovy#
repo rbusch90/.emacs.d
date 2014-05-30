@@ -1,0 +1,20 @@
+/*
+
+These 2 variables need to be passed to the script:
+
+job_name = ${env.JOB_NAME}
+release_version = ${env.RELEASE_VERSION}
+
+*/
+
+current_project = Hudson.instance.getItems().find{ it.name == job_name }
+release_project = Hudson.instance.copy(current_project, job_name + "-" + release_version)
+
+if release_project.scm.getType().equals("Git"){
+
+}
+
+if release_project.scm.getType().equals("CVS"){
+
+}
+

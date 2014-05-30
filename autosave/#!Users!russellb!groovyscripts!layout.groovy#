@@ -1,0 +1,22 @@
+import hudson.model.Hudson;
+import hudson.plugins.copyartifact.CopyArtifact;
+import hudson.plugins.copyandunarchive.CopyAndUnarchiveArtifact;
+
+job = null;
+def manifest = new File(layout_jobname + ".ini");
+current_buildlist = []
+layout_builds = []
+
+for (builder in job.getBuildersList()){
+    if (builder.class == CopyArtifact || builder.class == CopyAndUnarchiveArtifact){
+        current_buildlist.add(builder.project);
+    }
+}
+
+for (line in manifest.readLines() {
+    layout_job = hudson.getItems().find{ it.name == line }
+    if (layout_job != null) {
+        builder = new CopyArtifact(layout_job.name,"",null,"","",false,true);
+	job.getBuildersList().add(builder);
+    }
+}

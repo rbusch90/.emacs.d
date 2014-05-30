@@ -1,0 +1,30 @@
+;; This is a pimped out scratch buffer that persists across sessions. --russellb
+
+!mathlm.wolfram.com
+
+# Activation Keys
+build1win32
+build2lxvm
+build3win64
+build4win64
+build5win64
+buildalpha4lx
+buildarm1lx
+buildpaclet2lx
+buildpacletlx
+centos5vm1
+centos5vm2
+mtnlionbuildmac
+price3win
+
+
+=============
+Not in list:
+=============
+buildarm1lx
+centos5vm1
+centos5vm2
+price3win
+
+centos5vm1 
+

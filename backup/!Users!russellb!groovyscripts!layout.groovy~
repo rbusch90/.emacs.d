@@ -1,0 +1,10 @@
+def manifest = new File(layout_jobname + ".ini");
+layout_builds = []
+
+for (line in manifest.readLines() {
+    job = hudson.getItems().find{ it.name == line }
+    if (job != null) {
+        layout_builds.add(job.getValue());
+    }
+
+}

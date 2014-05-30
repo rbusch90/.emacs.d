@@ -1,0 +1,28 @@
+<project name='WebManipulate' basedir='.'>
+
+	<property name='component' value='WebManipulate' />
+	<property name='system_id' value='### Must be set by Jenkins ###' />
+
+	<property name='app.name' value='${component}' />
+	<property name='inputDir' value='${basedir}/../Documentation' />
+	<property name='language' value='### Must be set by Jenkins ###' />
+
+	<property environment='env' />x
+	<import file='${env.ANT-LIBRARY_HOME}/ant-lib.xml' />
+
+	<!--
+		Component (platform-independent)
+	-->
+
+	<target name='Component.WebServices.build'>
+
+		<ant antfile='build.xml'>
+			<property name='buildCode' value='${env.BUILD_NUMBER}' />
+			<property name='dist' value='${files_directory}' />
+			<target name='base' />
+			<target name='examples' />
+		</ant>
+
+	</target>
+
+</project>

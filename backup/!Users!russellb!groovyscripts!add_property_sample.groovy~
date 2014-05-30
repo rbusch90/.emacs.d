@@ -1,0 +1,14 @@
+// This is how to get each Paclet job in re-monitor
+def paclet_jobs = Hudson.instance.getView("WolframAlpha").getView("Paclets").getItems()
+
+for (paclet in paclet_jobs){
+    property = paclet.properties.find {
+    	it.getValue().getClass() == org.jenkinsci.plugins.paclet_deployments.PacletDeployments
+    }
+    if(property == null){
+    	paclet_name = paclet.getName()
+    	property = new org.jenkinsci.plugins.paclet_deployments.PacletDeployments(paclet_name)
+    	paclet.addProperty(property)
+    	paclet.save()
+    }
+}

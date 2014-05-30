@@ -1,0 +1,32 @@
+<div id="trade-suggestion-column" style="margin-top: 20px;">
+
+  <div class="row">
+    <div class="small-8 small-centered columns">
+      <a class="button" href="/profile/{{ c_user }}/trade_binder">
+	Edit Trade Binder
+      </a>
+    </div>
+  </div>
+
+  <hr />
+
+
+
+  <h4 class="subheader" style="text-align:center;">
+    Trade Suggestions
+  </h4>
+
+  <div id="user-list">    
+    <div class="row">
+      <div class="small-3 small-centered columns">
+	<img src="{{ STATIC_URL }}/icons/ajax-loader.gif"/>
+      </div>
+    </div>
+    
+  </div>
+
+</div>
+
+<script type="text/javascript">
+  update_hw_list();
+</script>

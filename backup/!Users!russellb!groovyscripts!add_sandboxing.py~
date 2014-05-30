@@ -1,0 +1,31 @@
+from shutil import copyfile
+
+
+def replace_xml(exemplar,target):
+    copyfile("%s/config.xml" % (exemplar),"%s/config.xml" % (target))
+
+def sandbox_paclets():
+    exemplar_paclet = "TestPacletData"
+    exemplar_localized = "CharacterDataLocalized"
+    exemplar_stubless = ""
+
+    paclets = [
+
+    ]
+
+    localized = [
+
+    ]
+
+    stubless = [
+
+    ]
+
+    for paclet in paclets:
+        replace_xml(paclet,exemplar_paclet)
+
+    for paclet in localized:
+        replace_xml(paclet,exemplar_localized)
+    
+    for paclet in stubless:
+        replace_xml(paclet,exemplar_stubless)

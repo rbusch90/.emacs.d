@@ -1,0 +1,22 @@
+def builder = new groovy.json.JsonBuilder()
+def root = builder.parameter {
+    {
+	name 'RECEIVED_NUMBER'
+	value 'PROMOTED_NUMBER'
+	}
+    person {
+    	firstName 'Guillame'
+	lastName 'Laforge'
+	// Named arguments are valid values for objects too
+	address(
+		city: 'Paris',
+		country: 'France',
+		zip: 12345,
+		)
+	married	true
+	// a list of values
+	conferences 'JavaOne', 'Gr8conf'
+	}       	
+}
+
+print builder.toString()

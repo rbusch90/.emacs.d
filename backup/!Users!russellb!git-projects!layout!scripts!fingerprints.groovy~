@@ -1,0 +1,17 @@
+hudson = Hudson.instance;
+
+// Given a map of <job name>:<build number>
+// fingerprints the artifacts with this layout build
+
+def makeFingerprints(manifest) {
+   actions = [];
+
+   manifest.each { key,value ->
+      job = hudson.getItem(key);
+      build = job.getBuildByNumber(value);
+
+      for(fingerprint in build.getFingerprints()){
+         fingerprint.add(layout_jobname,layout_buildnumber);
+      }
+   }
+}

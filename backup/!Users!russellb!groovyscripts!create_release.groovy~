@@ -1,0 +1,23 @@
+import hudson.plugins.copyartifact.CopyArtifact
+import hudson.plugins.copyandunarchive.CopyAndUnarchiveArtifact
+
+// RELEASE_JOBNAME = ${env.RELEASE_JOB}
+
+current_job = Hudson.instance.getItems().find{it.name == RELEASE_JOBNAME}
+requisite_jobs = []
+
+for (builder in release_job.getBuildersList()){
+    if (builder.class == CopyArtifact || builder.class == CopyAndUnarchiveArtifact){
+       name = builder.getProjectName()
+       requisite_jobs.add(Hudson.instance.getItems().find{it.name == name})
+    }
+}
+
+for (job in requisite_jobs){
+    build = job.getLastBuild()
+    //TODO: find the exact way of doing this
+    build.tag("Release")
+}
+
+release_job = Hudson.instance.copy(current_job,RELEASE_JOBNAME + "-" + RELEASE_VERSION)
+release_job.schedule_build()

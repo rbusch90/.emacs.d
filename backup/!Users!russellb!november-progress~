@@ -1,0 +1,65 @@
+[RE-1376] copy-and-unarchive can't unarchive two builds into the same directory
+ - debugged plugin to fix issues
+ - randomly generated temp directory's name to help avoid issues
+ - catch exception when unarchived artifacts already exist in the workspace
+
+[RE-1381] Formatted version number for Jenkins jobs
+ - wrote script for iterating through jobs and adding VersionNumber Build Wrapper
+
+[RE-1272] moved over builds w/Mathematica to use global variables defined in Jenkins
+
+[RE-1394] Component 2 Configuration Issues
+ - fixed configuration issues caused by conflicting changes in most Component 2 builds
+
+[RE-1400] CopyAndUnarchive NullPointerException
+ - moved over critical builds to use the regular CopyArtifact plugin
+ - debugged plugin
+ - solved NullPointer issue by removing dynamically named temp directories
+
+[RE-1354] JIRA plugin for Jenkins
+ - setup plugin with our jira settings, tested functionality
+ - made test job that creates JIRA tickets upon failure
+
+[RE-1399] Jenkins MathematicaSaaS builds
+ - update MathematicaSaaS build to use WolframCloudStore.jar from Jenkins artifacts
+
+[RE-1421] Added PopularCurveData to RE-Monitor
+
+[RE-1435] Added ThermodynaicDataRPLocalized to RE-Monitor
+
+[RE-1419] Action Skipped in CopyAndUnarchiveArtifacts
+ - re-did implementation of temp directory in unarchiving process
+ - updated plugin and verified fix in functionality
+
+Added members of MOnline team to CloudPlatform permissions list in RE-Monitor
+ - keshab, shawnam, tgayley, twj build privileges to all CloudPlatform jobs
+
+[RE-1412] Transition to Jenkins
+ - setup jobs for WebUI and WebManipulate in RE-Monitor
+
+[EMBEDCOMP-179] Set up SerialLink builds in RE-Monitor
+ - Component build, Linux-ARM and Linux builds
+
+
+=============
+=== TODO: ===
+=============
+
+[RE-1430] Deploy webm-dev8 from Jenkins
+ - move CloudPlatform deployment to Jenkins
+ - need to add 2 remaining CloudPlatform components, NotebookSigner and ReportGeneration, to Jenkins
+ - then remove Wolframwebapp_fetch target from ant script invocation
+
+[RE-1399] Jenkins MathematicaSaaS builds
+ - discuss/implement tagging, release/debug builds
+
+[RE-1354] JIRA plugin for Jenkins
+ - get CAPTCHA issue fixed
+ - meeting to discuss implementation
+
+[RE-1423] Add targets to PacletDeployments plugin
+ - worked with Meng Lu and Nick Spinner on acquiring sql credentials
+ - added the 2 servers to list of targets in the plugin
+
+[REPROJECTS-89] Job versioning for Jenkins
+ - wrote groovy script for creating new jobs (release builds)

@@ -1,0 +1,17 @@
+import hudson.plugins.copyandunarchive.CopyAndUnarchiveArtifact
+import hudson.model.Hudson
+
+// Grab environmental variables from current instance
+def thr = Thread.currentThread()
+def vars = thr?.executable?.properties.get("envVars")
+
+job_name = vars["JOB_NAME"]
+
+all_projects = Hudson.instance.getItems()
+for (project in all_projects){
+    for (property in project.properties){
+	if (property?.getTarget() == job_name) {
+	   Hudson.instance.queue.schedule(project)  
+	}
+    }
+}

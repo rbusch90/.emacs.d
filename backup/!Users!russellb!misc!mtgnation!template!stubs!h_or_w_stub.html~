@@ -1,0 +1,62 @@
+  <div class="small-6 columns" 
+       {% if stub_id == "have-stub" %}style="border-right: 1px solid #ccc;"{% endif %}>
+    {% if stub_id == "have-stub" %}
+    <h4 style="text-align:center;">Haves</h4>
+    {% else %}
+    <h4 style="text-align:center;">Haves</h4>
+    {% endif %}
+
+  {% if c_user == m_user %}
+
+    {% include "stubs/card_add_stub.html" %}
+    {% endwith %}
+  {% endif %}
+
+    {% for color in colors %}
+    <h4 class="subheader">{{ color }}</h4>
+    
+    {% for card in card_list %}
+    {% if card.get_color == color %}
+    
+    <div style="display:none;visibility:hidden;">
+      {% include "stubs/card_edit_dropdown.html" %}
+    </div>
+    <div {% if myprofile %}id="{{ card.get_id }}-hw-edit-stub"{% endif %}
+       style="padding-bottom:10px;">
+      {% include "stubs/cardtip.html" %}
+    x {{ card.count }}
+
+    {% if c_user == m_user %}
+    <a href="#"
+       onclick="update_hw_card_modal('{{ card.get_id }}');return false;">
+      <img src="{{ STATIC_URL }}/icons/edit.png" 
+	   style="padding-left:3px;width:14px;"/>
+    </a>
+    <a href="#"
+       onClick="remove_hw_card('{{ card.get_id }}');return false;">
+      <img src="{{ STATIC_URL }}/icons/cancel.png" 
+	   style="padding-left:3px;width:14px;"/>
+    </a>
+    {% endif %}
+
+    {% if card.get_set != "unspecified" %}
+    <br />
+    <i style="padding-left:15px;">[{{ card.get_set }}]</i>
+    {% endif %}
+    <br />
+    {% if card.condition != "NM/M" %}
+    <i style="padding-left:15px;">{{ card.condition }} condition</i><br />
+    {% endif %}
+    {% if card.get_details != "" %}
+    <i style="padding-left:15px;">{{ card.get_details }}</i><br />
+    {% endif %}
+    </div>
+
+    {% endif %}
+
+    {% endfor %}
+    <br /><br />
+
+
+  {% endfor %}
+  </div>

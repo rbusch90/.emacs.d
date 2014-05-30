@@ -1,0 +1,83 @@
+import hudson.model.Hudson;
+import hudson.plugins.copyartifact.CopyArtifact;
+import hudson.plugins.copyandunarchive.CopyAndUnarchiveArtifact;
+import hudson.model.View;
+import hudson.model.AllView;
+import hudson.plugins.nested_view.NestedView;
+import hudson.plugins.copyartifact.SpecificBuildSelector;
+import hudson.plugins.copyandunarchive.SpecificBuildSelector as UnarchiveSpecificBuildSelector;
+import hudson.plugins.promoted_builds.JobPropertyImpl;
+import org.jenkinsci.plugins.scriptler.builder.ScriptlerBuilder;
+import org.jenkinsci.plugins.scriptler.config.Parameter;
+
+
+current_job = Hudson.instance.getItems().find{it.name == RELEASE_JOBNAME}
+build_number = current_job.getLastSuccessfulBuild().number;
+
+release_job = Hudson.instance.copy(current_job,RELEASE_JOBNAME + "-" + VERSION_NUMBER);
+release_job.setDisplayName(RELEASE_JOBNAME + " "+ VERSION_NUMBER + " (Release Candidate)");
+
+for (builder in release_job.getBuildersList()){
+    // find each instance of copying artifacts from requisite jobs
+    if (builder.class == CopyArtifact || builder.class == CopyAndUnarchiveArtifact){
+       	name = builder.getProjectName();
+        job = Hudson.instance.getItems().find{it.name == name}
+        target_build = null;
+        // find the requisite build that was used in job's last successful build.
+        for(build in job.getBuilds()){
+            fingerprints = build.getBuildFingerprints();
+	    for(fingerprint in fingerprints){
+	        setrange = fingerprint.getRangeSet(current_job);
+              	range = null;
+                if (!setrange.isEmpty()){
+                  for (num in setrange.listNumbers()) {
+                    if (build_number == num){
+                    	target_build = build;
+                      	break;
+                    }
+                  }
+                }
+                // Stop looking if we've found it.
+              	if (target_build != null) break;
+	    }
+        }
+      	if (target_build == null){
+            // Catch occurence when requisite job hasn't utilized fingerprints.
+            target_build = job.getLastSuccessfulBuild();
+      	    println "Warning: no fingerprint found for " + job.name + ". Using last successful build for release."
+      	}
+	if (builder.class == CopyArtifact){
+      	    builder.selector = new SpecificBuildSelector(target_build.number.toString());
+	}
+	else{
+	    builder.selector = new UnarchiveSpecificBuildSelector(target_build.number.toString());
+	}
+    }
+}
+
+promotion_prop = new JobPropertyImpl(release_job);
+release_job.addProperty(promotion_prop);
+new_process = promotion_prop.addProcess("Approve Release");
+new_process.icon = "star-gold";
+
+parameters = [];
+parameters.add(new Parameter("RELEASE_JOBNAME", "\${PROMOTED_JOB_NAME}"));
+
+build_step = new ScriptlerBuilder("1","approverelease.groovy",true,(Parameter[])parameters);
+new_process.buildSteps.add(build_step);
+
+release_job.save()
+
+// For recursively traversing views (API only grabs 1 level of tree)
+def add_to_views(obj){
+    for (view in obj.getViews()){
+    	if(view.class == NestedView) add_to_views(view);
+	else {
+    	     if (view.class != AllView && view.contains(current_job)){
+       	     	view.add(release_job);
+		view.save();
+    	     }
+	}
+    }
+}
+add_to_views(Hudson.instance);

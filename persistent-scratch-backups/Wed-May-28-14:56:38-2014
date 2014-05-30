@@ -1,0 +1,66 @@
+;; This is a pimped out scratch buffer that persists across sessions. --russellb
+
+hudson.triggers.Trigger;
+
+hudson.triggers.SCMTrigger;
+
+hudson.triggers.TimerTrigger;
+
+
+==============
+
+if [SCMTrigger in someList]:
+
+    remove SCMTrigger
+    add new TimerTrigger("H 18 * * *")
+
+
+=============
+
+for(trigger in new_job.getTriggers()){
+    if (trigger.getClass() == SCMTrigger){
+        new_job.removeTrigger(trigger.getDescriptor());
+        new_job.addTrigger(new TimeTrigger("H 18 * * *"));
+    }
+}
+
+
+
+=====================================================
+
+AstronomyConvenienceFunctions AuthorTools CacheManager CCompilerDriver ClusterIntegration CompiledFunctionTools Convert CUDALink DatabaseLink DataScience DocumentationSearch EmbedCode EntityFramework FDLLink FEMDocumentation FormulaData GeometryTools GPUTools GUIKit HTTPClient IMAQTools InflationAdjust JLink JSONTools LibraryLink MP3Tools NETLink NotebookTemplating OAuth OGGTools OpenCLLink OpenSURF PacletManager ParallelTools PLI ProcessLink RemoteServices RLink Security SerialLink SocketLink SymbolicC TetGenLink TinkerForgeWeatherStationTools TriangleLink UUID WebpTools WebServices WolframAlphaClient XMLSchema
+
+
+UUID
+
+========================================
+
+for(layout_view in Hudson.instance.getView("Mathematica").getView("Release").getView("10.0").getView("Layout").getViews()){
+  
+  for (job in layout_view.getItems()){
+    new_job = Hudson.instance.getItems().find{ it.name == (job.name + ".10.0") }
+    if (new_job != null){
+      layout_view.doAddJobToView(new_job.name);
+      layout_view.doRemoveJobFromView(new_job.name.replace(".10.0",""));
+    }
+  }
+}
+
+x Layout.Desktop.Linux
+x Layout.Desktop.Linux-x86-64
+x Layout.Desktop.MacOSX-x86
+x Layout.Desktop.MacOSX-x86-64
+x Layout.Desktop.Windows
+x Layout.Desktop.Windows-x86-64
+x Layout.Extras.OSX
+x Layout.Extras.WIN
+x Layout.Secured.ChineseSimplified
+x Layout.Secured.Common
+x Layout.Secured.English
+x Layout.Secured.Japanese
+x Layout.Secured.Linux
+x Layout.Secured.Linux-x86-64
+x Layout.Secured.MacOSX-x86
+x Layout.Secured.MacOSX-x86-64
+x Layout.Secured.Windows
+x Layout.Secured.Windows-x86-64

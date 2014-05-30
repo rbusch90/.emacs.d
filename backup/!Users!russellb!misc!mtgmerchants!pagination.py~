@@ -1,0 +1,21 @@
+class Pagination(object):
+    def __init__(self,page,pages,url=""):
+        self.page = page
+        self.pages = []
+        self.beginning = True
+        self.end = True
+        self.url = url
+        self.length = pages
+
+        if pages <= 21:
+            self.pages = [x+1 for x in range(pages)]
+        elif page <= 11:
+            self.pages = [x+1 for x in range(21)]
+            self.end = False
+        elif pages - page <= 10:
+            self.pages = [x+1 for x in range(page-21,pages)]
+            self.beginning = False
+        else:
+            self.beginning = False
+            self.end = False
+            self.pages = range(page-10,page+10)

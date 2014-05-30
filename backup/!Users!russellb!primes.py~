@@ -1,0 +1,10 @@
+def get_primes(ceil):
+    primes = range(ceil)
+
+    for i in range(2,ceil):
+        x = i
+        while x <= ceil:
+            x = x + i
+            primes.remove(x)
+
+    return primes

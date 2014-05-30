@@ -1,0 +1,256 @@
+<?xml version='1.0'?>
+<project name='ant-lib'>
+
+	<property environment='env' />
+	<property name='checkout_directory' value='${env.WORKSPACE}' />
+	<property name='output_directory' value='${env.WORKSPACE}' />
+	<property name='scratch_directory' value='${env.WORKSPACE}/scratch' />
+
+	<property name='files_directory' value='${output_directory}/Files' />
+
+	<property name='appPath' value='${checkout_directory}/Pubs/OnlineProduction/Applications' />
+	<property name='jlinkpath' value='${env.MATHEMATICA_JLINK}' />
+	<property name='mathematicaInstallDir' value='${env.MATHEMATICA_DIRECTORY}' />
+	<property name='mathExe' value='${env.MATHEMATICA_KERNEL}' />
+
+	<condition property='is.osx'>
+		<os family='mac' />
+	</condition>
+
+	<condition property='is.unix'>
+		<and>
+			<os family='unix' />
+			<not><os family='mac' /></not>
+		</and>
+	</condition>
+
+	<condition property='is.windows'>
+		<os family='windows' />
+	</condition>
+
+	<!--
+		MacOS MathLink needs frameworks flag, -F.
+	-->
+
+	<condition property='use_framework' value='-F' else=''>
+		<os family='mac' />
+	</condition>
+
+	<property name='mathlink_directory' value='${use_framework}${checkout_directory}/MathLink' />
+
+	<target name='clean'>
+
+		<delete dir='${files_directory}' />
+		<delete dir='${scratch_directory}' />
+
+	</target>
+
+
+	<target name='init'>
+
+		<mkdir dir='${files_directory}' />
+		<mkdir dir='${scratch_directory}' />
+
+		<echo>checkout_directory == ${checkout_directory}</echo>
+		<echo>  output_directory == ${output_directory}</echo>
+		<echo> scratch_directory == ${scratch_directory}</echo>
+		<echo>   files_directory == ${files_directory}</echo>
+
+	</target>
+
+
+
+	<!--
+		Artifacts
+
+		Builds are expected to place all artifacts in ${files_directory}
+		(in whatever directory structure is appropriate), but Jenkins
+		expects the build artifact to be a single archive (.tar.gz / .zip).
+	-->
+
+	<target name='Artifacts.tar' unless='is.windows'>
+
+		<!--
+			The tar task doesn't preserve file permissions (due to mumble
+			mumble handwave in the Java runtime), so we must explicitly set
+			executables to 755.
+
+			(Some binaries on Linux / OS X have the .exe extension.)
+		-->
+
+		<tar destfile='${output_directory}/Files.tar.gz' compression='gzip'>
+			<tarfileset dir='${files_directory}' includes='**/*.dylib,**/*.a,**/*.so,**/*.exe' filemode='755' />
+			<tarfileset dir='${files_directory}' excludes='**/*.dylib,**/*.a,**/*.so,**/*.exe' />
+		</tar>
+
+	</target>
+
+	<target name='Artifacts.zip' if='is.windows'>
+
+		<zip destfile='${output_directory}/Files.zip'>
+			<zipfileset dir='${files_directory}' />
+		</zip>
+
+	</target>
+
+	<target name='Artifacts' depends='Artifacts.tar,Artifacts.zip' />
+
+
+	<!--
+		SignBinaries
+
+		Do code-signing on selected binaries.
+	-->
+
+	<target name='SignBinaries.check'>
+
+		<condition property='has.code-signing'>
+			<or>
+				<os family='mac' />
+				<os family='windows' />
+			</or>
+		</condition>
+
+	</target>
+
+	<!--
+		Define a pattern (id 'sign.pattern') that selects the files
+		to be signed.
+
+		Clients should override this target and redefine sign.pattern
+		as appropriate.
+
+		Default is (for now) to sign nothing.
+	-->
+
+	<target name='SignBinaries.pattern'>
+
+		<patternset id='sign.pattern'>
+			<exclude name='**' />
+		</patternset>
+
+	</target>
+
+	<target name='SignBinaries' depends='SignBinaries.check,SignBinaries.pattern' if='has.code-signing'>
+
+		<taskdef name='sign' classname='com.wolfram.re.Sign' classpath='${env.ANT-LIBRARY_HOME}/Sign.jar' />
+
+		<!-- TODO: Sign some code here ... -->
+
+	</target>
+
+
+	<!--
+		Component (platform-independent)
+
+		Jenkins calls Component.build, which invokes the appropriate
+		Component.<component>.build target.
+
+		Client scripts must provide Component.<component>.build.
+	-->
+
+	<target name='Component.build' depends='clean,init'>
+
+		<fail message='Must specify component.' unless='component' />
+		<echo>component == ${component}</echo>
+
+		<antcall target='Component.${component}.build' />
+		<antcall target='Artifacts' />
+
+	</target>
+
+
+	<!--
+		Native libraries (platform-specific)
+
+		Jenkins calls NativeLibrary.build, which invokes the appropriate
+		NativeLibrary.<system_id>.build target.
+
+		Client scripts should override NativeLibrary.<system_id>.build
+		as necessary.
+	-->
+
+	<target name='NativeLibrary.build' depends='clean,init'>
+
+		<fail message='Must specify component.' unless='component' />
+		<fail message='Must specify system_id.' unless='system_id' />
+
+		<property name='build_platform' value='${env.BUILD_PLATFORM}' />
+
+		<echo>component      == ${component}</echo>
+		<echo>system_id      == ${system_id}</echo>
+		<echo>build_platform == ${build_platform}</echo>
+
+		<antcall target='NativeLibrary.${component}.${system_id}.build' />
+		<antcall target='SignBinaries' />
+		<antcall target='Artifacts' />
+
+	</target>
+
+
+	<!--
+		Paclet (contains all platforms)
+
+		Jenkins calls Paclet.build, which invokes the appropriate
+		Paclet.<component>.build target.
+
+		Client scripts must provide Paclet.<component>.build.
+	-->
+
+	<target name='Paclet.build' depends='init'>
+
+		<fail message='Must specify component.' unless='component' />
+		<echo>component == ${component}</echo>
+
+		<antcall target='Paclet.${component}.build' />
+		<antcall target='Artifacts' />
+
+	</target>
+
+
+	<!--
+		Documentation
+
+		Client scripts are expected to use the Documentation.build / Web.build
+		targets defined here, and not override them.
+	-->
+
+	<target name='init.doc-build'>
+
+		<fail message='Must specify app.name.' unless='app.name' />
+		<fail message='Must specify language.' unless='language' />
+		<fail message='Must specify inputDir.' unless='inputDir' />
+
+		<echo>app.name == ${app.name}</echo>
+		<echo>language == ${language}</echo>
+		<echo>inputDir == ${inputDir}</echo>
+
+		<fail message='${inputDir}/${language} does not exist.'>
+ 			<condition>
+ 				<not><available file="${inputDir}/${language}" type="dir" /></not>
+ 			</condition>
+ 		</fail>
+
+	</target>
+
+	<target name='Documentation.build' depends='clean,init,init.doc-build'>
+
+		<ant antfile='${appPath}/DocumentationBuild/SystemFiles/ant/Build/notebook.xml' target='main'>
+			<property name='outputDir' value='${files_directory}/${app.name}/Documentation' />
+		</ant>
+
+		<antcall target='Artifacts' />
+
+	</target>
+
+	<target name='Web.build' depends='clean,init,init.doc-build'>
+
+		<ant antfile='${appPath}/DocumentationBuild/SystemFiles/ant/Build/html.xml' target='main'>
+			<property name='outputDir' value='${files_directory}/${app.name}/Web' />
+		</ant>
+
+		<antcall target='Artifacts' />
+
+	</target>
+
+</project>

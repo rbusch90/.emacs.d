@@ -1,0 +1,23 @@
+;; This is a pimped out scratch buffer that persists across sessions. --russellb
+
+
+// Add info about the selected build into the environment
+EnvAction envData = build.getAction(EnvAction.class);
+if (envData != null) {
+    envData.add(getItemGroup(build), expandedProject, src.getNumber());
+}
+
+// Translated to groovy
+
+envData = build.getAction(EnvAction);
+if (envData != null){
+    envData.add(/*ItemGroup object*/null,expandedProject,src.getNumber());
+}
+
+Dragon Claw Academy 
+
+2 times a week
+30 minutes each
+
+MW 5-5:30
+Sat 10-10:30

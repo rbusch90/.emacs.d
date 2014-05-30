@@ -1,0 +1,7 @@
+Weekend of October 19:
+
+Finished looking over list of plugins.  Have a list prepared for meeting with RE.
+
+Worked on sandboxing Mathematica task.  We might have a limitation, in that I don't think that custom tools can use the ${WORKSPACE} variable.
+
+Attempted to fix bug in CopyAndUnarchiveArtifact plugin where a NullPointerException occurred when workspace wasn't cleared.  I couldn't reproduce the error, so the constraints must be more specific than that.  I also don't think the error occurs for the same reason I initially thought, but it's difficult to debug this and figure out for sure.

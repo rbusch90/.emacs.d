@@ -1,0 +1,18 @@
+Mathematica 10 Release
+  - Wrote a script for tagging appropriate builds in Jenkins for release
+  - Developed process for branching development Components for release
+    - wrote script to branch jobs, update references to new release jobs
+      -- update polling references, build nightly rather than polling SCM, copy artifacts from release jobs
+    - created project to run script for arbitrary number of Components in a list
+
+  - Fixed Layout jobs to grab from cvs tags rather than most recent builds
+
+  - Wrote script to refactor Jenkins release process
+    - disabled most Component release jobs, leaving only moving targets
+    - updated layout release references to point to frozen builds for those jobs
+
+  - ComponentTagMove: job combines QAs moving of tags and REs creation of release jobs
+    - moves tag on given component to a given revision
+    - branches component to given release and tracks the given tag
+    - updates the release layout to reference the new release job
+

@@ -1,0 +1,68 @@
+function refresh_cart(){
+    $.ajax({
+        type: "GET",
+        url: "/merchant/ajax/current_sale/",
+        success: function(data)
+        {
+	    $("#current-sale-container").html(data);
+        }
+    });
+
+}
+
+function replace_img(card_name,card_id){
+    $.ajax({
+        type: "GET",
+        url: "/ajax/oracle/get_image/" + card_id,
+        success: function(data)
+        {
+	    $("#"+card_name+"-card-image-container").html(data);
+        }
+    });
+}
+
+function add_to_cart(form_id){
+    if($("#"+form_id+"-input").val() == "0"){
+	$("#"+form_id+"-input").val("1");
+	 return;
+    }
+
+    $.ajax({
+        type: "POST",
+        url: "/merchant/ajax/add_to_cart/",
+	data: $("#"+form_id).serialize(),
+        success: function(data)
+        {
+	    $("#"+form_id+"-input").val("1");
+
+	    if (data.indexOf("success") != -1){
+		refresh_cart();
+	    }
+	    else {
+		inform(data);
+	    }
+        }
+    });
+}
+
+function remove_from_cart(card_id){
+   $.ajax({
+        type: "GET",
+        url: "/merchant/ajax/remove_from_cart/"+card_id+"/",
+        success: function(data)
+        {
+	    refresh_cart();
+        }
+    });
+}
+
+function clear_sale(){
+  $.ajax({
+        type: "GET",
+        url: "/merchant/ajax/clear_cart/",
+        success: function(data)
+        {
+	    refresh_cart();
+        }
+    });
+}

@@ -1,0 +1,35 @@
+from django.contrib import admin
+from mtgnation.models import MagicUser,Comment,Message,UserCard,Avatar,Membership,Alert,Buddy
+from marketplace.models import TradeComment,Trade,TradeCard,Rating
+from forum.models import Category,Topic,Thread,ForumComment,Subscription,DeckImport
+from oracle.models import Card
+from deckbuilder.models import Deck,DeckCard,ClinicCase,DoctorLicense
+from merchant.models import Merchant,Cart,InventoryCard,PurchaseCard
+
+admin.site.register(MagicUser)
+admin.site.register(Avatar)
+admin.site.register(Membership)
+admin.site.register(Comment)
+admin.site.register(TradeComment)
+admin.site.register(Trade)
+admin.site.register(Card)
+admin.site.register(TradeCard)
+admin.site.register(UserCard)
+admin.site.register(Rating)
+admin.site.register(Category)
+admin.site.register(Topic)
+admin.site.register(Thread)
+admin.site.register(ForumComment)
+admin.site.register(Message)
+admin.site.register(Alert)
+admin.site.register(Subscription)
+admin.site.register(Buddy)
+admin.site.register(Deck)
+admin.site.register(DeckCard)
+admin.site.register(ClinicCase)
+admin.site.register(DoctorLicense)
+admin.site.register(DeckImport)
+admin.site.register(Merchant)
+admin.site.register(Cart)
+admin.site.register(InventoryCard)
+admin.site.register(PurchaseCard)

@@ -1,0 +1,1412 @@
+<!-- mathematica build file - Version 4.0 
+
+  Documentation:
+  
+  The server property may be set to specify which server to deploy to.  
+  This may be set on the command using '-Dserver=<server>'.  
+  
+  When the  server property is set it loads properties from matching 
+  the name deploy-<server>.properties from the current directory and 
+  from ${common.build.dir}/scripts.  The properties located in the 
+  current directory take precedence over the properties in the common
+  build directory.  If no server is set then the local properties are 
+  used.
+  
+  Examples: 
+    ant -Dserver=webm-dev install
+  
+  Targets:
+  
+  Use 'build' to build the webapp.
+  Use 'clean' to delete the contents of the ${build.dir} directory.
+  Use 'war' to build a war file that encapsulates the webapp.
+  
+  Use 'install' to install the war into a local or remote tomcat server.
+  Use 'remove' to remove a war from a local or remote tomcat server.
+  Use 'restart' to remove and then install a war from a local or 
+    remote tomcat server.
+  Use 'list' to list the webapps installed on a local or remote tomcat 
+    server.
+  Use 'start' to start the webapp installed on a local or remote tomcat 
+    server.
+  Use 'stop' to stop the webapp installed on a local or remote tomcat 
+    server.
+  Use 'reload' to reload the webapp installed on a local or remote tomcat 
+    server.
+   
+  To exclude files located in the development area from being included 
+  into the build or to include files outside the development area using 
+  an absolute path please use the paths defined below.
+  
+  To add additional filters to the templates just add a property to each
+  ${common.build.dir}/scripts/deploy-${server}.properties or create a new 
+  deploy-${server}.properties file for each server in this directory.  Then 
+  add any new properties to this file.  Then uncomment the line defined in 
+  the filterset below.  Changes made to the properties file in 
+  common.build.dir are visible to each project.  Changes made to the new files
+  are visible to this project only.  Changes made to the common properties 
+  files are discouraged.
+  
+  Changes may be made to the properties below if a different file structure is
+  desired for your project.  Please see the documentation below to see how 
+  each property is used.
+  
+  Please read the README.txt in each directory for more information about the
+  directories.  
+ 
+-->
+
+<project name="app"
+         default="build-default"
+         basedir=".">
+
+    <!-- load property files -->
+    <property file="webapp.properties"/>
+    <condition property="common.build.dir" value="../../common">
+        <not>
+            <isset property="common.build.dir"/>
+        </not>
+    </condition>
+    
+    
+    <!-- TEST VERSION NUMBER IS SET HERE -->
+    <condition property="server" value="webm-tst8">
+           <matches pattern="release" string="${re.build_type}" />
+    </condition>
+    
+    <condition property="server" value="webm-dev8">
+        <matches pattern="debug" string="${re.build_type}" />
+    </condition>
+    
+    <condition property="server" value="online-vm">
+        <matches pattern="online-vm" string="${re.build_type}" />
+    </condition>
+    
+    <condition property="properties.file" value="deploy-local.properties" else="deploy-${server}.properties">
+        <not>
+            <isset property="server"/>
+        </not>
+    </condition>
+    <property file="${properties.file}"/>
+    <property file="${common.build.dir}/scripts/${properties.file}"/>
+    <property file="build.properties"/>
+    <property file="${common.build.dir}/scripts/build.properties"/>
+    <tstamp prefix="now"/>
+    <condition property="MYDATESTAMP" value="${now.DSTAMP}" else="${custom.date}">
+        <not>
+            <isset property="custom.date"/>
+        </not>
+    </condition>
+
+    <!-- Property defaults:  -->
+    <!-- Properties are immutable, so these only apply if not set. -->
+    <property name="server.category" value="LOCAL"/>
+    <property name="node-exe" value="node"/>
+
+    <property name="KernelNumber" value="2"/>
+    <property name="ServiceKernelNumber" value="1"/>
+    <property name="PublicKernelNumber" value="1"/>
+
+    <property name="scheduler.start" value="false"/>
+    <property name="quartz.table.prefix" value="QRTZ_"/>
+
+    
+    <!--   Log basic properties   
+    <echo>Server: ${server}</echo>
+    <echo>Property File: ${properties.file}</echo>
+    <echo>Server Category: ${server.category}</echo>
+    -->
+
+    <!-- Properties for this build.xml
+
+      Set 'project.name' to specify the name of this project.
+      Set 'build.dir' to specify where the output of a build goes.
+      Set 'extern.classes.dir' to specify where to find external classes.
+      Set 'extern.lib.dir' to specify where to find external libraries.
+      Set 'extern.mathematica.dir' to specify where to find external
+        mathematica files.
+      Set 'extern.mathematica.dir' to specify where to find external
+        mathematica files.
+      Set 'java.src.dir' to specify where to find java source files.
+      Set 'mathematica.src.dir' to specify where to find Mathematica
+        source files.
+      Set 'webapp.src.dir' to specify where to find the webapp source
+        files.
+
+      -->
+    <property name="app.name" value="MOnline"/>
+    <property name="project.name" value="app"/>
+    <property name="build.dir" value="../build"/>
+    <property name="extern.classes.dir" value="../extern/classes"/>
+    <property name="extern.lib.dir" value="../extern/lib"/>
+    <property name="extern.tools.dir" value="../extern/tools"/>
+    <property name="extern.mathematica.dir" value="../extern/mathematica"/>
+    <property name="java.src.dir" value="../src/java"/>
+    <property name="mathematica.src.dir" value="../src/mathematica"/>
+    <property name="webapp.src.dir" value="../src/webapp"/>
+    <property name="web.src.dir" value="../src/apache"/>
+    <property name="webm.location" value="${build.dir}/webMathematica"/>
+    <condition property="build_number" value="${build.number}" else="10000000">
+        <isset property="build.number"/>
+    </condition>
+
+    <property name="webapp.src.dir.abs" location="../src/webapp"/>
+
+    <!-- Properties for Karma test runner -->
+    <property name="base.dir.abs" location="../"/>
+    <property name="tests.dir.abs" location="../tests/"/>
+    <property name="tests.results.karma" location="../build/karma-test-results.xml"/>
+
+    <!-- Properties for JSDoc -->
+    <property name="jsdoc.base.dir" location="../doc"/>
+
+    <!-- Properties for java.build.xml
+
+      Required Properties:
+      Set 'java.build.classes.dir' to specify the directory where the java classes
+        are built.
+      Set 'java.build.src.dir' to specify the directory where the java library is built.
+      Set 'java.jar' to specify where to create the jar file.
+      Set 'java.src.jar' to specify where to create the source jar file.
+
+      -->
+    <property name="java.build.classes.dir" value="${build.dir}/java/classes"/>
+    <property name="java.build.source.dir" value="${build.dir}/java/src"/>
+    <property name="java.jar" value="${build.dir}/java/${project.name}.jar"/>
+    <property name="java.src.jar" value="${build.dir}/java/${project.name}-src.jar"/>
+
+    <!-- Properties for mathematica.build.xml
+
+      Required Properties:
+      Set 'mathematica.build.dir' to specify the directory where the Mathematica files
+        are built.
+
+      Optional Properties:
+      Set 'mathematica.build.java.dir' to specify the directory where the Java files
+        will be placed in the build.
+
+      -->
+
+    <property name="mathematica.build.dir" value="${build.dir}/${project.name}"/>
+    <!-- Uncomment if you need to add Java files to a Mathematica package.
+    <property name="mathematica.build.java.dir" value="${mathematica.build.dir}/package/Java"/>
+      -->
+
+    <!-- Properties for webapp.build.xml
+
+      Required Properties:
+      Set 'webapp.build.dir' to specify the directory where the webapp is built.
+      Set 'webapp.name' to specify the name of the webapp.
+      Set 'webapp.war' to specify where to create the war file.
+        Set 'webapp.javascript.concat.file' to specify the output file of the Javascript
+        concatentation task.
+      Set 'webapp.css.concat.file' to specify the output file of the CSS
+        concatentation task.
+
+      -->
+
+    <property name="webapp.name" value="${project.name}"/>
+    <property name="webapp.build.dir" value="${build.dir}/webapp/${webapp.name}"/>
+    <property name="webapp.war" value="${build.dir}/webapp/${webapp.name}.war"/>
+    <tstamp prefix="now"/>
+    <property name="webapp.javascript.concat.file" value="/javascript/${app.name}-${now.DSTAMP}-concatenated.js"/>
+    <property name="webapp.css.concat.file" value="/css/${app.name}-${now.DSTAMP}-concatenated.css"/>
+
+    <!-- Properties for tomcat.build.xml
+
+      Required Properties:
+      Set 'tomcat.context' to specify the context to use.
+      Set 'tomcat.home' to specify the location of tomcat (required if tomcat.local.install.file
+        and tomcat.tasks.jar are not set).
+      Set 'tomcat.manager.url' to specify the URL to use when communicationg with a tomcat
+        manager webapp.
+      Set 'tomcat.manager.username' to specify the username to use when communicating
+        with a tomcat manager webapp.
+      Set 'tomcat.war' to specify the war file to install (required for install).
+
+      Optional Properties:
+      Set 'tomcat.install.type' to either 'http' or 'local' to specify the type of
+        install.  This required to be set when using a local install (default is 'http').
+      Set 'tomcat.local.install.file' to specify the file on the local file system to copy
+        the war file to (default is '${tomcat.home}/webapps/${tomcat.context}.war').
+      Set 'tomcat.webapps.dir' to specify the webapps directory where the war file
+        is expanded.  This is used to insure the webapp is properly uninstalled for local
+        installs. (default is '${tomcat.home}/webapps/${tomcat.context}.war').
+      Set 'tomcat.manager.password' to specify the password to use when communicating
+        with a tomcat manager webapp (the user is prompted if not set).
+      Set 'tomcat.tasks.jar' to specify where to find the tomcat ant tasks (default is
+        '${tomcat.home}/server/lib/catalina-ant.jar').
+      Set 'tomcat.temp.dir' to specify where temporary data is put (default is '.').
+      Set 'tomcat.url' to check if a tomcat server is alive.  Prints nicer error messages
+        if set.
+
+      IMPORTANT NOTE:
+      tomcat.manager.url and tomcat.manager.username are generally defined in the properties file
+      for a particular server.
+
+      -->
+    <property name="tomcat.context" value="${webapp.name}"/>
+    <property name="tomcat.war" value="${webapp.war}"/>
+    <property name="tomcat.tasks.jar" value="${common.build.dir}/extern/lib/catalina-ant.jar"/>
+
+    <!-- Property for apache server -->
+    <property name="ApacheServ" value="${apache.server}"/>
+
+    <!-- Properties for rsync.build.xml -->
+
+    <property name="rsync.application.src.dir" value="${rsync.src.dir}/${webapp.name}"/>
+    <property name="rsync.application.url" value="rsync://${server}/${rsync_module}"/>
+    <property name="rsync.webapp.src.dir" value="${webapp.build.dir}"/>
+    <property name="rsync.wolframwebapp.src.dir" value="${build.dir}/Wolframwebapp"/>
+    <property name="rsync.webapp.url" value="rsync://${server}/${rsync_module}/webapp"/>
+    <property name="rsync.web.src.dir" value="${webapp.build.dir}/web"/>
+    <property name="rsync.web.url" value="rsync://${webserver}/${rsync_module}/webapp/web"/>
+    <property name="rsync.wolframwebapp.url" value="rsync://${nfsserver}/deploy.CP.Wolframwebapp"/>
+    <property name="rsync.wolframwebappvm.url" value="rsync://${server}/deploy.CP.Wolframwebapp"/>
+
+    <!-- old property to still deploy the CommonArea WolframApplications directory  -->
+    <property name="rsync.wolframwebapp.url.old" value="rsync://${nfsserver}/Wolframwebapp"/>
+
+
+    <!-- Uncomment if you want to do a local install when the server property is not specified
+     <condition property="tomcat.install.type" value="local">
+       <not>
+         <isset property="server"/>
+       </not>
+     </condition>
+     -->
+
+    <!-- Paths for java.build.xml
+
+      Required Paths:
+      Set 'java.classpath' to specify which classes are included and excluded
+        from being put into WEB-INF/classes in the build.
+      Set 'java.sourcepath' to specify which files are included and excluded from
+        sourcepath in the build.
+
+     -->
+    <path id="java.sourcepath">
+        <pathelement location="${java.src.dir}"/>
+    </path>
+
+
+    <path id="java.classpath">
+        <pathelement location="${extern.classes.dir}"/>
+        <fileset dir="${extern.lib.dir}">
+            <patternset>
+                <include name="**/*.jar"/>
+            </patternset>
+        </fileset>
+        <pathelement location="${common.build.dir}/extern/classes"/>
+        <fileset dir="${common.build.dir}/extern/lib">
+            <patternset>
+                <include name="**/*.jar"/>
+                <exclude name="**/wolfram-kerneltools*.jar"/>
+                <exclude name="**/wolfram-webmathematica*.jar"/>
+            </patternset>
+        </fileset>
+        <fileset dir="${webm.location}/WEB-INF/lib">
+            <include name="wolfram-kernelserver-2.0.0.jar"/>
+            <include name="wolfram-msp-4.0.0.jar"/>
+        </fileset>
+    </path>
+
+    <!-- Paths for mathematica.build.xml
+
+        Required Paths:
+        Set 'mathematica.src.path' to specify which Mathematica files are included and
+          excluded from being put into the build.
+        Set 'mathematica.java.path' to specify which files are included and excluded from
+          Java directory in the build.
+
+      -->
+    <path id="mathematica.src.path">
+        <fileset dir="${mathematica.src.dir}">
+            <patternset>
+                <exclude name="**/CVS/*"/>
+                <exclude name="**/.AppleDouble/*"/>
+                <exclude name="**/*.DS_Store"/>
+                <exclude name="README.txt"/>
+            </patternset>
+        </fileset>
+    </path>
+
+    <path id="mathematica.java.path">
+        <!-- Uncomment to add Java libraries
+        <fileset dir="${extern.classes.dir}">
+          <patternset>
+            <include name="**/*.class" />
+          </patternset>
+        </fileset>
+        <fileset dir="${extern.lib.dir}">
+          <patternset>
+            <include name="**/*.jar" />
+          </patternset>
+        </fileset>
+        <fileset dir="${common.build.dir}/extern/classes">
+          <patternset>
+            <include name="**/*.class" />
+          </patternset>
+        </fileset>
+        <fileset dir="${common.build.dir}/extern/lib">
+          <patternset>
+            <include name="**/*.jar" />
+          </patternset>
+        </fileset>
+        <pathelement location="${java.jar}"/>
+        -->
+    </path>
+
+    <!-- Paths and Filtersets for webapp.build.xml
+
+        Required Paths:
+        Set 'webapp.classpath' to specify which classes are included and excluded
+          when compiling JSPs
+        Set 'webapp.classes.path' to specify which classes are included and excluded
+          from being put into WEB-INF/classes in the build.
+        Set 'webapp.lib.path' to specify which classes are included and excluded
+         from being put into WEB-INF/lib in the build.
+        Set 'webapp.mathematica.path' to specify which classes are included and
+          excluded from being put into WEB-INF/Applications in the build.
+        Set 'webapp.src.path' to specify which files are included and excluded from
+          webapp.src.dir in the build.
+        Set 'webapp.src.filterpath' to specify which files are included and excluded as
+          template from webapp.src.dir.
+        Set 'webapp.javascript.path' to specify which files are included and excluded from
+          the Javascript concatenation build.
+        Set 'webapp.css.path' to specify which files are included and excluded from
+          the CSS concatenation build.
+
+        Required Filterset:
+        Set 'webapp.src.filterset' to specify the filters to be processed.  Files that will
+          be processed are files that end in .template.
+
+      -->
+    <path id="webapp.src.path">
+        <fileset dir="${webapp.src.dir}">
+            <patternset>
+                <exclude name="**/CVS/*"/>
+                <exclude name="**/.AppleDouble/*"/>
+                <exclude name="**/*.DS_Store"/>
+                <exclude name="README.txt"/>
+                <exclude name="**/*.template"/>
+            </patternset>
+        </fileset>
+    </path>
+
+    <path id="webapp.classes.path">
+        <fileset dir="${extern.classes.dir}">
+            <patternset>
+                <include name="**/*.class"/>
+            </patternset>
+        </fileset>
+        <fileset dir="${java.build.classes.dir}">
+            <patternset>
+                <include name="**/*.class"/>
+            </patternset>
+        </fileset>
+    </path>
+
+    <path id="webapp.lib.path">
+        <fileset dir="${extern.lib.dir}">
+            <patternset>
+                <include name="**/*.jar"/>
+                <include name="**/*.zip"/>
+            </patternset>
+        </fileset>
+        <pathelement location="${java.jar}"/>
+    </path>
+
+    <path id="webapp.classpath">
+        <pathelement location="${extern.classes.dir}"/>
+        <fileset dir="${extern.lib.dir}">
+            <patternset>
+                <include name="**/*.jar"/>
+            </patternset>
+        </fileset>
+        <pathelement location="${common.build.dir}/extern/classes"/>
+        <path refid="java.classpath"/>
+    </path>
+
+    <path id="webapp.mathematica.path">
+        <fileset dir="${extern.mathematica.dir}">
+            <patternset>
+                <exclude name="**/CVS/*"/>
+                <exclude name="**/.AppleDouble/*"/>
+                <exclude name="**/*.DS_Store"/>
+                <exclude name="README.txt"/>
+                <exclude name="**/*.template"/>
+            </patternset>
+        </fileset>
+        <fileset dir="${mathematica.build.dir}"/>
+    </path>
+
+    <path id="webapp.src.filterpath">
+        <fileset dir="${webapp.src.dir}">
+            <patternset>
+                <include name="**/MathematicaSaaS-*.xml"/>
+                <include name="**/MSPConfiguration.xml"/>
+                <include name="**/web.xml"/>
+                <include name="**/log4j.properties"/>
+                <include name="**/templates.xml"/>
+                <include name="**/*.jsp"/>
+                <include name="**/*.template"/>
+            </patternset>
+        </fileset>
+    </path>
+
+    <mapper id="webapp.src.filtermapper">
+        <globmapper from="*.template" to="*"/>
+        <globmapper from="*" to="*"/>
+    </mapper>
+
+    <filterset begintoken="@" endtoken="@" id="webapp.src.filterset">
+        <filter token="webapp.name" value="${webapp.name}"/>
+        <filter token="ROOT" value="${webapp.root}"/>
+        <filter token="LOGINSYSTEM" value="${webapp.loginsystem}"/>
+        <filter token="LOADBALANCER" value="${webapp.loadbalancer}"/>
+        <filter token="TIMESTAMP" value="${MYDATESTAMP}"/>
+
+        <filtersfile file="${common.build.dir}/scripts/${properties.file}"/>
+        <!--  Uncomment this if you create a local deploy-${server}.properties file that you want to filter with.-->
+        <filtersfile file="${properties.file}"/>
+
+    </filterset>
+
+    <path id="webapp.javascript.path">
+        <fileset dir="${webapp.src.dir}/javascript">
+            <patternset>
+                <include name="**/require_monline.js"/>
+                <include name="**/cookie.js"/>
+                <include name="**/modernizr.js"/>
+                <include name="**/NotebookMenu.js"/>
+                <include name="**/jquery.form.js"/>
+                <include name="**/jquery-ui.min.js"/>
+                <include name="**/jquery.hotkeys.js"/>
+                <include name="**/stylepalette.js"/>
+                <include name="**/jquery.datePicker.js"/>
+                <include name="**/date.js"/>
+                <include name="**/jquery.json-2.2.js"/>
+                <include name="**/jpicker-1.1.5.js"/>
+                <include name="**/bubblepop.js"/>
+                <include name="**/jQuery.fileinput.js"/>
+                <include name="**/jquery.scrollTo.js"/>
+                <include name="**/jquery.browser.min.js"/>
+                <include name="**/jquery.mousewheel.min.js"/>
+                <include name="**/layout/**"/>
+                <include name="**/pubsub.js"/>
+            </patternset>
+        </fileset>
+    </path>
+
+    <path id="webapp.css.path">
+        <fileset dir="${webapp.src.dir}/css">
+            <patternset>
+                <!-- now inlcuded
+                <exclude name="**/layout.new.css" />
+                <exclude name="**/forms.new.css" />
+                <exclude name="**/navbar.css" />
+                -->
+                <exclude name="**/widgetResults.css"/>
+                <exclude name="**/widgetResultsIE7.css"/>
+                <exclude name="**/widgetResultsSplat.css"/>
+                <exclude name="**/ie7.css"/>
+                <exclude name="**/ie8.css"/>
+            </patternset>
+        </fileset>
+    </path>
+
+    <!-- Import ant scripts -->
+    <import file="${common.build.dir}/scripts/java.build.xml"/>
+    <import file="${common.build.dir}/scripts/mathematica.build.xml"/>
+    <import file="${common.build.dir}/scripts/webapp.build.xml"/>
+    <import file="${common.build.dir}/scripts/tomcat.build.xml"/>
+    <import file="${common.build.dir}/scripts/rsync.build.xml"/>
+    <import file="webapp-deploy-concat-files.build.xml"/>
+
+    <!-- Webapp targets -->
+    <target name="clean" description="Clean the build directory.">
+        <delete dir="${build.dir}"/>
+    </target>
+
+    <target name="build-no-war" description="Build without the war file.">
+        <antcall target="java-jar"/>
+        <antcall target="mathematica-build"/>
+        <antcall target="webapp-build"/>
+        <antcall target="replace-url"/>
+        <antcall target="replace-url-placeholder"/>
+        <antcall target="webapp-version-files"/>
+        <antcall target="webapp-gzip-files"/>
+        <antcall target="WebCopy"/>
+        <antcall target="build_number"/>
+    </target>
+
+    <target name="build" description="Build the webapp.">
+        <antcall target="build-no-war"/>
+        <antcall target="webapp-build-war"/>
+    </target>
+
+    <target name="build-default" description="Clean and build the webapp">
+        <antcall target="clean"/>
+        <antcall target="build"/>
+    </target>
+
+    <target name="replace-url" if="replace-url" description="Replace /mathematica/images with /images so it's served from Apache instead of Tomcat">
+        <replace dir="${webapp.build.dir}" value="/images" summary="true">
+            <!-- <replacetoken><![CDATA[/mathematica/images]]></replacetoken> -->
+            <replacefilter
+                    token="/@webappRoot@/images"/>
+            <replacefilter
+                    token="/@webappRoot@/newlayout/images" value="/newlayout/images"/>
+            <replacefilter token="/@webappRoot@/css/fonts/" value="/compress/css/fonts/"/>
+            <replacefilter token="/@webappRoot@/mobile/" value="/${webapp.name}/mobile/"/>
+            <include name="**/*.js"/>
+            <include name="**/*.css"/>
+            <include name="**/*.htm"/>
+            <include name="**/*.jsp"/>
+        </replace>
+    </target>
+
+    <target name="replace-url-placeholder" unless="replace-url" description="Replace /@webappRoot/images with ${webapp.name}/images to remove the need for hardcoded image urls">
+        <replace dir="${webapp.build.dir}" value="/${webapp.name}/images" summary="true">
+            <!-- <replacetoken><![CDATA[/mathematica/images]]></replacetoken> -->
+            <replacefilter
+                    token="/@webappRoot@/images"/>
+            <replacefilter
+                    token="/@webappRoot@/newlayout/images" value="/${webapp.name}/newlayout/images"/>
+            <replacefilter token="/@webappRoot@/css/fonts/" value="/${webapp.name}/css/fonts/"/>
+            <replacefilter token="/@webappRoot@/mobile/" value="/${webapp.name}/mobile/"/>
+            <include name="**/*.js"/>
+            <include name="**/*.css"/>
+            <include name="**/*.htm"/>
+            <include name="**/*.jsp"/>
+        </replace>
+    </target>    
+
+    <target name="javadocs" depends="build" description="Generate JavaDocs for the project">
+        <javadoc packagenames="com.wolfram.webapps.mathematica.saas.*"
+                 sourcepath="${java.src.dir}"
+                 classpath="${java.classpath}"
+
+                 defaultexcludes="yes"
+                 destdir="${build.dir}/javadocs"
+                 author="true"
+                 version="true"
+                 use="true"
+                 windowtitle="Wolfram Cloud Platform"
+                 useexternalfile="yes">
+
+            <classpath>
+                <dirset dir="${build.dir}/java/classes"/>
+                <fileset dir="${extern.lib.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+                <fileset dir="${common.build.dir}/extern/lib">
+                    <include name="*.jar"/>
+                </fileset>
+                <fileset dir="${build.dir}/webapp/${webapp.name}/WEB-INF/lib">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+
+            <doctitle><![CDATA[<h1>JavaDocs</h1>]]></doctitle>
+            <bottom><![CDATA[<i>Copyright &#169; 2013 Wolfram Research Inc. All Rights Reserved.</i>]]></bottom>
+        </javadoc>
+    </target>
+
+    <target name="jsdoc" description="Generates the JSDoc JavaScript documentation. Must have node+jsdoc installed.">
+        <exec executable="${jsdoc-exe}" dir="${jsdoc.base.dir}">
+            <env key="node" file="${node-exe}"/>
+            <arg value="-t"/>
+            <arg value="template"/>
+            <arg value="-c"/>
+            <arg value="jsdoc.conf.json"/>
+            <arg value="--destination"/>
+            <arg value="${build.dir}/jsdoc"/>
+        </exec>
+    </target>
+
+
+    <!-- from http://docs.jslint4java.googlecode.com/git/2.0.5 -->
+    <taskdef name="jslint"
+             classname="com.googlecode.jslint4java.ant.JSLintTask"
+             classpath="${extern.tools.dir}/jslint4java-2.0.5.jar" />
+
+    <property name="jslintfile" value="**/*.js" />
+
+    <target name="jslint" description="Performs JavaScript linting using JSLint">
+        <!-- see definitions at http://docs.jslint4java.googlecode.com/git/2.0.5/ant.html -->
+        <jslint options="ass,browser,continue,devel,es5,indent=4,nomen,plusplus,regexp,todo,vars">
+            <predef>define,require,requirejs,$$,jQuery,mconsole,console,httpdRoot,notebookData,MOnline,compressedJSDataDirectory,compressedJSDataTimestamp,describe,it,afterEach,beforeEach,expect,jasmine,spyOn,_</predef>
+            <formatter type="plain" />
+            <fileset dir="${webapp.src.dir}/javascript" includes="${jslintfile}">
+                <exclude name="data/**" />
+                <exclude name="editor/codemirror/**" />
+                <exclude name="kernel/lib/**" />
+                <exclude name="lib/**" />
+            </fileset>
+        </jslint>
+    </target>
+
+
+    <!--<target name="BuildNo" description="Getting the build no">
+        <dir name='${webapp.build.dir}'>
+            <print file="Build_no">${build.number}</print>
+        </dir>
+        </target>-->
+
+    <!-- Ant target to create a war file -->
+    <target name="webapp-war-sub"/>
+
+    <target name="webapp-build-war" description="Create a war file.">
+        <!-- Create a war file that will be used for deployment. -->
+        <jar jarfile="${webapp.war}" update="true">
+            <fileset dir="${webapp.build.dir}"/>
+        </jar>
+        <antcall target="webapp-war-sub"/>
+    </target>
+
+
+    <target name="webapp-pre-deploy-mail" if="email" description="Sending pre-deploy email ">
+        <mail mailhost="smtp.wolfram.com"
+              subject="Cloud Platform deployed to ${tomcat-server} - ${user.name}"
+              from="${user.name}@wolfram.com"
+              replyto="${user.name}@wolfram.com"
+              tolist="t-cloudplatform@wolfram.com"
+              message="Cloud Platform deployed to ${tomcat-server} - ${user.name}.
+                  &#10; Please send an email to t-cloudplatform@wolfram.com if you find any bugs or have any problems or concerns. 
+                  &#10; &#10; Thanks "/>
+    </target>
+
+
+    <target name="webapp-build-sub">
+        <antcall target="webMathematicaCopy"/>
+    </target>
+
+
+    <target name="webMathematicaCopy">
+        <copy todir="${webapp.build.dir}" overwrite="false" preservelastmodified="true">
+            <path>
+                <fileset dir="${webm.location}">
+                    <patternset>
+                        <include name="WEB-INF/Applications/StreamLink/**"/>
+                        <include name="WEB-INF/Applications/KernelServer/**"/>
+                        <include name="WEB-INF/Applications/MSP/**"/>
+                        <include name="WEB-INF/Applications/Security/**"/>
+                        <include name="WEB-INF/tlds/**"/>
+                        <include name="WEB-INF/lib/wolfram-kernelserver-2.0.0.jar"/>
+                        <include name="WEB-INF/lib/wolfram-msp-4.0.0.jar"/>
+                        <include name="WEB-INF/lib/JLink.jar"/>
+                    </patternset>
+                </fileset>
+            </path>
+        </copy>
+        <copy todir="${webapp.build.dir}/utilities"
+              overwrite="true"
+              preservelastmodified="true"
+              file="${webm.location}/Resources/Tools/KernelMonitor.jsp">
+        </copy>
+    </target>
+
+    <!-- Call WebCopy if only -Dwebserver is supplied> -->
+    <!--    <if ApacheServ="${webserver}" exists="true">
+            <antcall target="WebCopy"/>
+        </if>
+    -->
+
+    <!-- Ant target to copy web content -->
+
+    <target name="WebCopy" description="Copy web files to Tomcat so we can use minified sources without Apache.">
+        <mkdir dir="${webapp.build.dir}/web"/>
+        <copy todir="${webapp.build.dir}/web" overwrite="false" preservelastmodified="true">
+            <path>
+                <fileset dir="${web.src.dir}">
+                    <patternset>
+                        <include name="htdocs/**"/>
+                        <include name="data/**"/>
+                        <include name="bin/**"/>
+                    </patternset>
+                </fileset>
+            </path>
+        </copy>
+
+        <copy todir="${webapp.build.dir}/web/htdocs" overwrite="false" preservelastmodified="true">
+            <path>
+                <fileset dir="${webapp.build.dir}">
+                    <patternset>
+                        <include name="javascript/**"/>
+                        <include name="css/**"/>
+                        <include name="images/**"/>
+                        <include name="newlayout/**"/>
+                    </patternset>
+                </fileset>
+            </path>
+        </copy>
+
+        <!-- gzipped files -->
+        <copy todir="${webapp.build.dir}/web/data/compress" overwrite="false" preservelastmodified="true">
+            <path>
+                <fileset dir="${webapp.build.dir}">
+                    <patternset>
+                        <include name="javascript/MOnline*built.js"/>
+                        <include name="javascript/MOnline*built.js.gz"/>
+                        <include name="javascript/data/function-information-*"/>
+                        <include name="css/*-min-built.css"/>
+                        <include name="css/*-min-built.css.gz"/>
+                        <include name="css/fonts/*.ttf"/>
+                        <include name="css/fonts/*.ttf.gz"/>
+                    </patternset>
+                </fileset>
+            </path>
+        </copy>     
+    </target>
+
+    <target name="build_number" description="build number">
+        <!-- <dirname property="${webapp.build.dir}" file="mybuild.number"/> -->
+        <echo file="${webapp.build.dir}/Build_number">${build_number}</echo>
+    </target>
+
+    <!-- Ant Target to download Cloud Platform from RE build for devel -->
+    <target name="MOnline-fetch-devel" description="Download latest RE Jenkins build of MathematicaSaaS">
+        <mkdir dir="${build.dir}/webapp/${webapp.name}"/>
+        <condition property="MOnlinefetch.buildparam" value="&amp;build=${MOnline.build}" else="">
+            <isset property="MOnline.build"/>
+        </condition>
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/MathematicaSaaS/lastSuccessfulBuild/artifact/WebDevelopment/Applications/webapps/MathematicaSaaS/build/webapp/${webapp.name}.war"
+             dest="${build.dir}/${webapp.name}.war"/>
+        <unzip src="${build.dir}/${webapp.name}.war" dest="${build.dir}/webapp/${webapp.name}" overwrite="true"/>
+    </target>
+
+    <!-- Ant Target to download Cloud Platform from RE build for TST and PRD -->
+    <target name="MOnline-fetch-test" description="Download the 1.0.6 release build from build monitor.">
+        <mkdir dir="${build.dir}/webapp/${webapp.name}"/>
+        <condition property="MOnlinefetch.buildparam" value="&amp;build=${MOnline.build}" else="">
+            <isset property="MOnline.build"/>
+        </condition>
+        <get src="http://images.wolfram.com/download/build?build_system=Component&amp;build_type=release&amp;component=MathematicaOnline&amp;version=1.0.6&amp;tail=Files/${webapp.name}.war&amp;ext=WAR${MOnlinefetch.buildparam}"
+             dest="${build.dir}/${webapp.name}.war"/>
+        <unzip src="${build.dir}/${webapp.name}.war" dest="${build.dir}/webapp/${webapp.name}" overwrite="true"/>
+    </target>
+
+    <!-- Ant Target to download Cloud Platform from RE build for VM -->
+
+    <target name="MOnline-fetch-VM">
+        <mkdir dir="${build.dir}/webapp/${webapp.name}"/>
+        <condition property="MOnlinefetch.buildparam" value="&amp;build=${MOnline.build}" else="">
+            <isset property="MOnline.build"/>
+        </condition>
+        <get src="http://images.wolfram.com/download/build?build_system=Component&amp;component=MathematicaOnline&amp;build_type=online-vm&amp;version=1.0.6&amp;tail=Files/${webapp.name}.war&amp;ext=WAR${MOnlinefetch.buildparam}"
+             dest="${build.dir}/${webapp.name}.war"/>
+        <unzip src="${build.dir}/${webapp.name}.war" dest="${build.dir}/webapp/${webapp.name}" overwrite="true"/>
+    </target>
+
+    <!-- Ant Target to download webMathematica -->
+    <target name="webm-fetch" description="Download the latest RE Jenkins build of webMathematica.">
+        <mkdir dir="${build.dir}"/>
+        <condition property="webmfetch.buildparam" value="&amp;build=${webm.build}" else="">
+            <isset property="webm.build"/>
+        </condition>
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/webMathematica/lastSuccessfulBuild/artifact/WebKernel/output/webMathematica/webMathematica.zip"
+             dest="${build.dir}/webMathematica.zip"/>
+        <unzip src="${build.dir}/webMathematica.zip" dest="${build.dir}" overwrite="true"/>
+        <delete file="${build.dir}/${webapp.name}.war"/>
+    </target>
+
+    <!-- Ant Target to download webMathematica -->
+    <target name="webm-fetch-buildMonitor" description="Download the latest RE monitor build of webMathematica.">
+        <mkdir dir="${build.dir}"/>
+        <condition property="webmfetch.buildparam" value="&amp;build=${webm.build}" else="">
+            <isset property="webm.build"/>
+        </condition>
+        <get src="http://images.wolfram.com/download/build?build_system=Component&amp;component=WEBM&amp;version=4.0.1&amp;tail=Files/webMathematica.zip&amp;ext=ZIP${webmfetch.buildparam}"
+             dest="${build.dir}/webMathematica.zip"/>
+        <unzip src="${build.dir}/webMathematica.zip" dest="${build.dir}" overwrite="true"/>
+        <delete file="${build.dir}/${webapp.name}.war"/>
+    </target>
+
+    <!-- Ant Target to download WolframCloudStore -->
+
+    <target name="WolframCloudStore_fetch" description="Download the latest RE Jenkins build of WolframCloudStore.">
+        <condition property="WolframCloud.buildparam" value="&amp;build=${WolframCloud.build}" else="">
+            <isset property="WolframCloud.build"/>
+        </condition>
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/WolframCloudStore/lastSuccessfulBuild/artifact/WolframCloudStore/dist/WolframCloudStore.jar"
+             dest="${build.dir}/WolframCloudStore.jar"/>
+        <copy todir="${extern.lib.dir}" overwrite="true" file="${build.dir}/WolframCloudStore.jar">
+        </copy>
+        <delete file="${build.dir}/WolframCloudStore.jar"/>
+    </target>
+
+    <!-- Ant Target to download Wolfram webapp -->
+
+    <!-- Ant Target to download Wolfram webapp
+        This target grabs all of the packages that live in CommonAreas/WolframApplications then rsyncs it in.
+        There are a number of things that don't have a "build" so were pushed or created manually at some point, these are excluded from the rsync to prevent them from being blown away.
+        We probably need to change this so that everything comes from cvs somewhere.
+        We should figure out what to do with Examples.
+        see https://twiki.wolfram.com/view/WebRD/MathematicaOnlineCommonAreasDeployment for more information.
+    -->
+
+    <target name="Wolframwebapp_fetch" description="Download the latest WL Packages ">
+        <mkdir dir="${build.dir}/Wolframwebapp"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/WebGLGraphics3D/lastSuccessfulBuild/artifact/build/WebGLGraphics3D.zip"
+             dest="${build.dir}/Wolframwebapp/WebGLGraphics3D.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/WebGLGraphics3D.zip" dest="${build.dir}/Wolframwebapp" overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/WebGLGraphics3D.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/GraphicsTools/lastSuccessfulBuild/artifact/build/GraphicsTools.zip"
+             dest="${build.dir}/Wolframwebapp/GraphicsTools.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/GraphicsTools.zip" dest="${build.dir}/Wolframwebapp" overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/GraphicsTools.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/WebUI/lastSuccessfulBuild/artifact/build/WebUI.zip"
+             dest="${build.dir}/Wolframwebapp/WebUI.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/WebUI.zip" dest="${build.dir}/Wolframwebapp" overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/WebUI.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/WebManipulate/lastSuccessfulBuild/artifact/WebManipulate/build/WebManipulate.zip"
+             dest="${build.dir}/Wolframwebapp/WebManipulate.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/WebManipulate.zip" dest="${build.dir}/Wolframwebapp" overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/WebManipulate.zip"/>
+
+<!-- TODO: Move this to Jenkins -->
+        <get src="http://images.wolfram.com/download/build?build_system=Component&amp;component=NotebookSigner&amp;version=9.1.0&amp;Category=25&amp;build_type=Full&amp;tail=Files.zip&amp;ext=ZIP"
+             dest="${build.dir}/Wolframwebapp/Files.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/Files.zip" dest="${build.dir}/Wolframwebapp" overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/Files.zip"/>
+
+<!-- TODO: Move this to Jenkins -->
+        <get src="http://images.wolfram.com/download/build?build_system=Publication&amp;content=ReportGeneration&amp;version=9.1.0&amp;candidate=0&amp;media=Online&amp;language=English&amp;tail=Files.zip&amp;ext=ZIP"
+             dest="${build.dir}/Wolframwebapp/Files.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/Files.zip" dest="${build.dir}/Wolframwebapp" overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/Files.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/GraphicsTools2D/lastSuccessfulBuild/artifact/build/GraphicsTools2D.zip"
+             dest="${build.dir}/Wolframwebapp/GraphicsTools2D.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/GraphicsTools2D.zip" dest="${build.dir}/Wolframwebapp" overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/GraphicsTools2D.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/MOnlineGraphics2D/lastSuccessfulBuild/artifact/build/MOnlineGraphics2D.zip"
+             dest="${build.dir}/Wolframwebapp/MOnlineGraphics2D.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/MOnlineGraphics2D.zip" dest="${build.dir}/Wolframwebapp"
+               overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/MOnlineGraphics2D.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/InstantAPIServer/lastSuccessfulBuild/artifact/build/InstantAPIServer.zip"
+             dest="${build.dir}/Wolframwebapp/InstantAPIServer.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/InstantAPIServer.zip" dest="${build.dir}/Wolframwebapp"
+               overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/InstantAPIServer.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/view/CloudPlatform/job/WebPredictions/lastSuccessfulBuild/artifact/WebPredictions/build/WebPredictions.zip"
+             dest="${build.dir}/Wolframwebapp/WebPredictions.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/WebPredictions.zip" dest="${build.dir}/Wolframwebapp"
+               overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/WebPredictions.zip"/>
+
+        <get src="http://re-monitor.wolfram.com:8080/job/Component.CloudObject/lastSuccessfulBuild/artifact/Files.zip"
+             dest="${build.dir}/Wolframwebapp/CloudObject.zip"/>
+        <unzip src="${build.dir}/Wolframwebapp/CloudObject.zip" dest="${build.dir}/Wolframwebapp"
+               overwrite="true"/>
+        <delete file="${build.dir}/Wolframwebapp/CloudObject.zip"/>
+
+    </target>
+
+
+	<!-- Ant Target to deploy MathematicaOnline webapp -->
+
+    <target name="webapp-deploy" description="Install the webapp on the Tomcat server.">
+        <antcall target="rsync-webapp"/>
+        <antcall target="webapp-pre-deploy-mail"/>
+    </target>
+
+    <target name="web-deploy" description="Install the web files on the Apache server.">
+        <antcall target="rsync-web"/>
+    </target>
+
+    <target name="deploy" description="Install the application on the server.">
+        <antcall target="rsync-application"/>
+    </target>
+
+
+    <!-- Ant Target to deploy Wolfram webapp to NFS server -->
+
+    <target name="Wolframwebapp-deploy" description="Copy WolframApplications packages to the common area using rsync.">
+        <fail unless="rsync.wolframwebapp.url" message="Property rsync.wolframwebapp.url is not set."/>
+        <fail unless="rsync.wolframwebapp.src.dir" message="Property rsync.wolframwebapp.src.dir is not set."/>
+        <exec executable="rsync" failonerror="true">
+            <arg value="-a"/>
+            <arg value="-v"/>
+            <arg value="--delete"/>
+            <!-- Don't remove Resource directory -->
+            <arg value="--exclude=Resources"/>
+            <arg value="--exclude=Examples"/>
+            <arg value="--exclude=GoogleChart"/>
+            <arg value="--exclude=MathJax"/>
+            <arg value="--exclude=MUnit"/>
+            <arg value="--exclude=TestLogger"/>
+            <arg value="--exclude=WebIO"/>
+            <arg value="${rsync.wolframwebapp.src.dir}/"/>
+            <arg value="${rsync.wolframwebapp.url}"/>
+        </exec>
+    </target>
+
+    <!-- Ant Target to deploy Wolfram webapp to NFS server in old way from joshuamlx -->
+
+    <target name="Wolframwebapp-deploy-joshuamlx" description="Copy WolframApplications packages to the common area using rsync.">
+        <fail unless="rsync.wolframwebapp.url.old" message="Property rsync.wolframwebapp.url.old is not set."/>
+        <fail unless="rsync.wolframwebapp.src.dir" message="Property rsync.wolframwebapp.src.dir is not set."/>
+        <exec executable="rsync" failonerror="true">
+            <arg value="-a"/>
+            <arg value="-v"/>
+            <arg value="--delete"/>
+            <!-- Don't remove Resource directory -->
+            <arg value="--exclude=Resources"/>
+            <arg value="--exclude=Examples"/>
+            <arg value="--exclude=GoogleChart"/>
+            <arg value="--exclude=MathJax"/>
+            <arg value="--exclude=MUnit"/>
+            <arg value="--exclude=TestLogger"/>
+            <arg value="--exclude=WebIO"/>
+            <arg value="${rsync.wolframwebapp.src.dir}/"/>
+            <arg value="${rsync.wolframwebapp.url.old}"/>
+        </exec>
+    </target>
+
+    <!-- Ant Target to deploy Wolfram webapp to NFS server -->
+
+    <target name="Wolframwebappvm-deploy" description="Copy Wolfram webapp on the vm server using rsync.">
+        <fail unless="rsync.wolframwebapp.url" message="Property rsync.wolframwebapp.url is not set."/>
+        <fail unless="rsync.wolframwebapp.src.dir" message="Property rsync.wolframwebapp.src.dir is not set."/>
+        <exec executable="rsync" failonerror="true">
+            <arg value="-a"/>
+            <arg value="-v"/>
+            <arg value="--delete"/>
+            <arg value="--exclude=Examples"/>
+            <arg value="--exclude=GoogleChart"/>
+            <arg value="--exclude=MathJax"/>
+            <arg value="--exclude=MUnit"/>
+            <arg value="--exclude=TestLogger"/>
+            <arg value="--exclude=WebIO"/>
+            <arg value="${rsync.wolframwebapp.src.dir}/"/>
+            <arg value="${rsync.wolframwebappvm.url}"/>
+        </exec>
+    </target>
+    <target name="local-deploy" description="Install the webapp on local server.">
+        <copy file="${webapp.war}" todir="${local.deploy.dir}" overwrite="true"/>
+    </target>
+
+    <target name="local-rsync" description="Install the unpacked webapp on local server.">
+        <delete file="${local.deploy.dir}/${webapp.name}.war"/>
+        <exec executable="rsync" failonerror="true">
+            <arg value="--archive"/>
+            <arg value="--delete"/>
+            <arg value="${webapp.build.dir}"/>
+            <arg value="${local.deploy.dir}/${webapp.name}"/>
+        </exec>
+    </target>
+
+    <target name="killall" description="Run killall to remove kernel instances. ">
+        <exec executable="killall">
+            <arg value="-9"/>
+            <arg value="MathematicaServer"/>
+            <arg value="MathKernel"/>
+        </exec>
+    </target>
+
+    <target name="killcatalina"
+            description="Run killall to remove kernel instances and the Catalina bootstrap process. ">
+        <exec executable="killall">
+            <arg value="-9"/>
+            <arg value="MathematicaServer"/>
+            <arg value="MathKernel"/>
+            <arg value="java"/>
+            <!-- TODO: match arguments to ensure that only
+            /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java -Djava.util.logging.config.file=/www/tomcat/conf/logging.properties -server ...
+            is killed -->
+        </exec>
+    </target>
+
+
+    <target name="intellij-after-build"
+            description="Tasks to execute after building using IntelliJ IDEA before deploying to Tomcat">
+        <antcall target="mathematica-build"/>
+        <!--<antcall target="webapp-build"/>-->
+        <antcall target="replace-url"/>
+        <antcall target="replace-url-placeholder"/>
+        <antcall target="webapp-version-files"/>
+        <antcall target="webapp-gzip-files"/>
+        <!--<antcall target="WebCopy" />-->
+        <antcall target="build_number"/>
+
+        <!--<antcall target="webapp-copy-filters" />
+
+        <delete file="${webapp.build.dir}/WEB-INF/lib/servlet-api.jar"/>-->
+    </target>
+
+
+    <target name="local-clean" depends="clean" description="Cleans webapps/app directory">
+        <delete file="${local.deploy.dir}/../conf/Catalina/localhost/${webapp.name}.xml" failonerror="false"/>
+        <delete file="${local.deploy.dir}/${webapp.name}.war" failonerror="false"/>
+        <delete dir="${local.deploy.dir}/${webapp.name}" quiet="false" failonerror="true"/>
+    </target>
+
+
+    <target name="local-copy" depends="build-no-war"
+            description="Copy build dir to webapps/${webapp.name} dir.  Not always safe without local-clean, but much faster than default target.">
+        <delete file="${local.deploy.dir}/${webapp.name}.war"/>
+        <copy todir="${local.deploy.dir}/${webapp.name}" overwrite="false" preservelastmodified="true">
+            <fileset dir="${webapp.build.dir}"/>
+        </copy>
+        <copy todir="${local.deploy.dir}/${webapp.name}/compress" overwrite="false" preservelastmodified="false">
+                    <fileset dir="${webapp.build.dir}/web/data/compress"/>
+                </copy>
+        <copy file="${webapp.build.dir}/META-INF/context.xml"
+              tofile="${local.deploy.dir}/../conf/Catalina/localhost/${webapp.name}.xml" overwrite="true"/>
+    </target>
+
+
+    <target name="local-deploy-dir" description="Install the unpacked webapp on local server." depends="build">
+        <delete file="${local.deploy.dir}/${webapp.name}.war"/>
+        <delete dir="${local.deploy.dir}/${webapp.name}"/>
+        <mkdir dir="${local.deploy.dir}/${webapp.name}"/>
+        <copy todir="${webapp.build.dir}/compress">
+            <fileset dir="${webapp.build.dir}/web/data/compress"/>
+        </copy>
+        <copy todir="${local.deploy.dir}/${webapp.name}" preservelastmodified="true">
+            <fileset dir="${webapp.build.dir}">
+                <include name="**/*"/>
+            </fileset>
+        </copy>
+    </target>
+
+
+    <target name="local-copy-static" depends="build-no-war"
+            description="Copy build folder to /www/tomcat/webapps/${webapp.name} dir.  Not always safe without local-clean.">
+        <delete file="${local.deploy.dir}/${webapp.name}.war"/>
+        <copy todir="${local.deploy.dir}/${webapp.name}/javascript" overwrite="false" preservelastmodified="true">
+            <fileset dir="${webapp.build.dir}/javascript"/>
+        </copy>
+        <copy todir="${local.deploy.dir}/${webapp.name}/css" overwrite="false" preservelastmodified="true">
+            <fileset dir="${webapp.build.dir}/css"/>
+        </copy>
+    </target>
+
+
+    <!-- Tomcat targets -->
+    <target name="list" description="List webapps on the server.">
+        <antcall target="tomcat-list"/>
+    </target>
+
+    <target name="install" depends="build" description="Install the webapp on the server.">
+        <antcall target="tomcat-install"/>
+    </target>
+
+    <target name="restart" depends="build" description="Restart the webapp on the server.">
+        <antcall target="tomcat-restart"/>
+    </target>
+
+    <target name="remove" description="Remove the webapp from the server.">
+        <antcall target="tomcat-remove"/>
+    </target>
+
+    <target name="start" description="Start the webapp on the server.">
+        <antcall target="tomcat-start"/>
+    </target>
+
+    <target name="stop" description="Stop the webapp on the server.">
+        <antcall target="tomcat-stop"/>
+    </target>
+
+    <target name="reload" description="Reload the webapp on the server.">
+        <antcall target="tomcat-reload"/>
+    </target>
+
+
+    <!-- CSS minification -->
+    <target name="webapp-minify-css" depends="webapp-embedimages-css,webapp-concatenate-css" unless="dont.minify.css">
+        <apply executable="java" parallel="false" dest="${webapp.build.dir}/css">
+            <fileset dir="${webapp.build.dir}/css" includes="**/*-built.css"/>
+            <arg line="-jar"/>
+            <arg path="${common.build.dir}/extern/lib/yuicompressor-2.3.5.jar"/>
+            <arg line="-o"/>
+            <mapper type="glob" from="*-built.css" to="*-min-built.css"/>
+            <targetfile/>
+        </apply>
+    </target>
+
+    <!-- cssembed downloaded from https://github.com/nzakas/cssembed and built using ant -->
+    <taskdef name="cssembed"
+             classname="net.nczonline.web.cssembed.CSSEmbedTask"
+             classpath="${extern.lib.dir}/cssembed-0.4.5.jar"
+            />
+
+
+    <target name="webapp-embedimages-css" unless="dont.minify.css" 
+    	description="Convert image links to data URIs in the CSS files.">
+        <!-- Only embed images <= 2 KB = 2048 Bytes. Use verbose="true" to see details of the process. -->
+        <cssembed root="${build.dir}/webapp"
+                  skipMissing="true"
+                  maxImageSize="2048"
+                  verbose="false"
+                >
+            <fileset dir="${webapp.build.dir}/css" includes="**/*.css"/>
+        </cssembed>
+    </target>
+
+    <target name="webapp-concatenate-css" unless="dont.concat.css"
+    	description="Concatenates CSS files so we have just a few resources to load.">
+        <concat destfile="${webapp.build.dir}/css/lib-${now.DSTAMP}-built.css">
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/lib">
+                    <patternset>
+                        <include name="**/*.css"/>
+                        <exclude name="**/*-overrides.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/lib">
+                    <patternset>
+                        <include name="**/*-overrides.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/fonts">
+                    <patternset>
+                        <include name="**/*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+        </concat>
+        
+        <concat destfile="${webapp.build.dir}/css/common-${now.DSTAMP}-built.css">
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/common">
+                    <patternset>
+                        <include name="**/*.css"/>
+                        <exclude name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/common">
+                    <patternset>
+                        <include name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+        </concat>
+
+        <concat destfile="${webapp.build.dir}/css/editor-${now.DSTAMP}-built.css">
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/editor">
+                    <patternset>
+                        <include name="**/*.css"/>
+                        <exclude name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/editor">
+                    <patternset>
+                        <include name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+        </concat>
+
+
+        <concat destfile="${webapp.build.dir}/css/layout-${now.DSTAMP}-built.css">
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/layout">
+                    <patternset>
+                        <include name="**/*.css"/>
+                        <exclude name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/layout">
+                    <patternset>
+                        <include name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+        </concat>
+
+        <concat destfile="${webapp.build.dir}/css/notebook-${now.DSTAMP}-built.css">
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/notebook">
+                    <patternset>
+                        <include name="**/*.css"/>
+                        <exclude name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+
+            <sort>
+                <fileset dir="${webapp.build.dir}/css/notebook">
+                    <patternset>
+                        <include name="**/*custom*.css"/>
+                    </patternset>
+                </fileset>
+            </sort>
+        </concat>
+
+    </target>
+
+
+    <!-- JavaScript/require.js build targets -->
+    <target name="webapp-minify-javascript" description="Builds concatenated JavaScript files using require.js. Needs node installed. "
+        unless="dont.minify.javascript">
+        <exec executable="${node-exe}" failonerror="true">
+            <arg value="r.js"/>
+            <arg value="-o"/>
+            <arg value="build.js"/>
+            <arg value="name=layout"/>
+            <arg value="out=${webapp.build.dir}/javascript/${app.name}-layout-${now.DSTAMP}-built.js"/>
+        </exec>
+        <exec executable="${node-exe}" failonerror="true">
+            <arg value="r.js"/>
+            <arg value="-o"/>
+            <arg value="build.js"/>
+            <arg value="name=notebook"/>
+            <arg value="out=${webapp.build.dir}/javascript/${app.name}-notebook-${now.DSTAMP}-built.js"/>
+        </exec>
+        <exec executable="${node-exe}" failonerror="true">
+            <arg value="r.js"/>
+            <arg value="-o"/>
+            <arg value="build.js"/>
+            <arg value="name=full"/>
+            <arg value="out=${webapp.build.dir}/javascript/${app.name}-full-${now.DSTAMP}-built.js"/>
+        </exec>
+        <exec executable="${node-exe}" failonerror="true">
+            <arg value="r.js"/>
+            <arg value="-o"/>
+            <arg value="build.js"/>
+            <arg value="name=textfile"/>
+            <arg value="out=${webapp.build.dir}/javascript/${app.name}-textfile-${now.DSTAMP}-built.js"/>
+        </exec>
+        <concat destfile="${webapp.build.dir}/javascript/${app.name}-lib-${now.DSTAMP}-built.js" fixlastline="yes">
+            <filelist dir="${webapp.src.dir}/javascript/lib/jquery">
+                <file name="jquery-1.10.2.min.js"/>
+                <file name="jquery-migrate-1.2.1.min.js"/>
+                <file name="jquery-ui.min.js"/>
+            </filelist>
+            <sort>
+                <fileset dir="${webapp.src.dir}/javascript/lib">
+                    <patternset>
+                        <include name="**/*.js"/>
+                        <exclude name="backbone/*"/>
+                        <exclude name="jquery/jquery-1*.js"/>
+                        <exclude name="jquery/jquery-ui*.js"/>
+                        <exclude name="jquery/jquery.colorpicker.js"/>
+                        <exclude name="jquery/jquery.minicolors*.js"/>
+                        <exclude name="**/*.source.js"/>
+                        <exclude name="bjspell/*js"/>
+                        <exclude name="require/*"/>
+                    </patternset>
+                </fileset>
+            </sort>
+            <sort>
+                <fileset dir="${webapp.src.dir}/javascript/global">
+                    <patternset>
+                        <include name="**/*.js"/>
+                        <exclude name="**/*.source.js"/>
+                    </patternset>
+                </fileset>
+            </sort>
+            <sort>
+                <!-- Include backbone and require.js last, so that library files do not define themselves via AMD. -->
+                <fileset dir="${webapp.src.dir}/javascript/lib">
+                    <patternset>
+                        <include name="backbone/*"/>
+                        <include name="require/*"/>
+                        <exclude name="require/text.js"/>
+                    </patternset>
+                </fileset>
+            </sort>
+        </concat>
+        <concat destfile="${webapp.build.dir}/javascript/${app.name}-colors-${now.DSTAMP}-built.js" fixlastline="yes">
+            <filelist dir="${webapp.src.dir}/javascript/lib/jquery">
+                <file name="jquery.minicolors.min.js"/>
+                <file name="jquery.colorpicker.min.js"/>
+            </filelist>
+        </concat>
+    </target>
+
+    <target name="run-karma-tests" description="Runs the Karma test runner using PhantomJS">
+        <exec executable="${node-exe}" dir="${tests.dir.abs}/javascript">
+            <arg value="./node_modules/karma/bin/karma"/>
+            <arg value="start"/>
+            <arg value="karma.conf.js"/>
+            <arg value="--reporters=dots"/>
+            <arg value="--browsers=PhantomJS"/>
+            <arg value="--single-run"/>
+            <arg value="--no-auto-watch"/>
+        </exec>
+    </target>
+
+    <target name="run-karma-tests-desktop" description="Runs the Karma test runner in a desktop environment with actual browsers">
+        <!-- For some reason, Karma cannot open the default browsers when it is run through ant.
+        It works by specifying the browser location directly,
+        but then we also need to pass in some parameters to the browser.
+        So we create a temporary executable script file that launches the browser and passes in parameters.
+        It accepts one argument which is the URL the browser should open.
+        However, Karma will not terminate browsers started this way correctly.
+        (It will kill the script file, but not the started browser.)
+        So in the script file, we create another script "killer" file that terminates the browser after
+        a timeout of 15 seconds, and immediately launch that killer script.
+        Of course, this 15 seconds timeout is the fragile part and probably has to be increased when the number of
+        test cases increases significantly. -->
+        <!-- Firefox -->
+        <tempfile property="karma.browser.firefox.script" destDir="${java.io.tmpdir}" prefix="karma-browser-firefox"/>
+        <tempfile property="karma.browser.firefox.killer" destDir="${java.io.tmpdir}" prefix="karma-browser-firefox-pid"/>
+        <tempfile property="karma.browser.firefox.profile" destDir="${java.io.tmpdir}" prefix="karma-browser-firefox" suffix="user-data-dir"/>
+        <echo file="${karma.browser.firefox.script}">#!/bin/sh
+            ${karma-firefox} -silent -no-remote -profile "${karma.browser.firefox.profile}" $1 &amp;
+            echo "sleep 15; kill -KILL $!" >${karma.browser.firefox.killer};
+            sh ${karma.browser.firefox.killer} &amp;
+        </echo>
+        <chmod file="${karma.browser.firefox.script}" perm="ugo+x"/>
+        <!-- Chrome -->
+        <tempfile property="karma.browser.chrome.script" destDir="${java.io.tmpdir}" prefix="karma-browser-chrome"/>
+        <tempfile property="karma.browser.chrome.killer" destDir="${java.io.tmpdir}" prefix="karma-browser-chrome-killer"/>
+        <tempfile property="karma.browser.chrome.profile" destDir="${java.io.tmpdir}" prefix="karma-browser-chrome" suffix="user-data-dir"/>
+        <echo file="${karma.browser.chrome.script}">#!/bin/sh
+            ${karma-chrome} --no-first-run --user-data-dir="${karma.browser.chrome.profile}" $1 &amp;
+            echo "sleep 15; kill -KILL $!" >${karma.browser.chrome.killer};
+            sh ${karma.browser.chrome.killer} &amp;
+        </echo>
+        <chmod file="${karma.browser.chrome.script}" perm="ugo+x"/>
+
+        <!-- Create the Karma configuration file containing the proper output file path.
+        (Unfortunately, this cannot be set via the command-line parameters.)
+        As we create this file in a different directory, we have to set basePath
+        (otherwise, basePath would be relative to the location of the configuration file). -->
+        <tempfile property="karma.configfile" destDir="${java.io.tmpdir}" prefix="karma" suffix=".conf.js"/>
+        <copy file="${tests.dir.abs}/javascript/karma.conf.js" tofile="${karma.configfile}"/>
+        <echo file="${karma.configfile}" append="true">
+            basePath = "${base.dir.abs}";
+            junitReporter = {
+                outputFile: "${tests.results.karma}"
+            };
+        </echo>
+
+        <!-- Run the Karma executable through node, overriding some parameters from karma.conf.js -->
+        <exec executable="${node-exe}" dir="${tests.dir.abs}/javascript">
+            <arg value="./node_modules/karma/bin/karma"/>
+            <arg value="start"/>
+            <arg value="${karma.configfile}"/>
+            <arg value="--reporters=dots,junit"/>
+            <arg value="--browsers=${karma.browser.firefox.script},${karma.browser.chrome.script}"/>
+            <arg value="--single-run"/>
+            <arg value="--no-auto-watch"/>
+        </exec>
+    </target>
+
+</project>
