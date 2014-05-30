@@ -73,3 +73,9 @@
 (load-library "mathematica")
 ;; Mathematica command-line executable directory is variable, so line may change
 (setq mathematica-command-line "/Applications/Mathematica\ 9.app/Contents/MacOS/MathKernel")
+
+;; Auto-Complete
+(add-to-list 'load-path "/Users/russellb/.emacs.d/")
+(require 'auto-complete-config)
+(add-to-list 'ac-dictionary-directories "/Users/russellb/.emacs.d//ac-dict")
+(ac-config-default)
