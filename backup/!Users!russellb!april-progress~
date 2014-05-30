@@ -1,4 +1,0 @@
-[REPROJECTS-101] Mathematica Plugin for Jenkins
-  - investigated different extension points for Jenkins (hooks for terminating kernel)
-  - extracted build process into separate executor to better control kernel
-  - catch an aborted build and terminate kernel before allowing it to abort

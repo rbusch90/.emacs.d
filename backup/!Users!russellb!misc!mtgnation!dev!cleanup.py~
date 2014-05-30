@@ -1,7 +1,0 @@
-from django.db.models import Q
-from oracle.models import Card
-
-def remove_bullshit():
-    for card in Card.objects.filter(Q(expansion__icontains="masters edition")|Q(
-            card_type__icontains="Plane")|Q(card_type__icontains="Vanguard")):
-        card.delete()

@@ -1,9 +1,0 @@
-Updated PacletJobGenerator to create WASpecialPacletPush jobs
-  - updated groovy script
-  - modeled SpecialPaclets after GeoNamesDumpData
-
-[RE-1418] Setup and initial compilation of HospitalData
-
-Layout builds in RE-Monitor
-  - researched programmatic implementation of fingerprints in build system
-  - wrote a script for artificially placing fingerprints on builds in layout process

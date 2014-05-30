@@ -1,2 +1,0 @@
-import hudson.plugins.promoted_builds.JobPropertyImpl;
-
